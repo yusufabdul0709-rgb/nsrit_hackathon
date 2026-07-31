@@ -8,6 +8,7 @@ require('dotenv').config();
 
 const { connectDB, dbStore } = require('./config/db');
 const routes = require('./routes');
+const adminRoutes = require('./routes/admin.routes');
 const csvDataService = require('./services/csvData.service');
 const NotificationService = require('./services/notification.service');
 
@@ -18,7 +19,10 @@ const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
+    credentials: true,
   },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
 });
 
 // Attach Socket.IO to Notification Service
@@ -43,6 +47,9 @@ app.use((req, res, next) => {
   req.io = io;
   next();
 });
+
+// Explicit Admin API Routes
+app.use('/api/admin', adminRoutes);
 
 // Main REST API Router
 app.use('/api', routes);
@@ -80,6 +87,11 @@ io.on('connection', (socket) => {
 
   socket.on('qrScanned', (data) => {
     io.emit('qrScanned', data);
+  });
+
+  socket.on('qrRedeemed', (data) => {
+    console.log('🔒 Event: qrRedeemed', data?.ticketId);
+    io.emit('qrRedeemed', data);
   });
 
   socket.on('destinationSelected', (data) => {

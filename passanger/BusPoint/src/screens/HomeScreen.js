@@ -1,13 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Image, StatusBar, Platform, TextInput, Animated } from 'react-native';
 import LiveTrackingCard from '../components/LiveTrackingCard';
 import {
   Bell, MapPin, Wallet, Search,
   Ticket, Bus, QrCode, Clock, Map as MapIcon,
   Gift, Compass, Navigation, History, Shield,
-  ArrowRight, Star, Bot, ArrowRightLeft
+  ArrowRight, Star, Bot, ArrowRightLeft, Check
 } from 'lucide-react-native';
 import tw from 'twrnc';
+import { fetchPlaceSuggestions } from '../services/mapboxService';
 
 const Header = () => (
   <View style={tw`flex-row justify-between items-center mb-6`}>
@@ -71,8 +72,27 @@ const HeroCard = ({ navigation }) => (
 );
 
 const SmartSearch = ({ navigation }) => {
-  const [startStop, setStartStop] = React.useState('');
-  const [endStop, setEndStop] = React.useState('');
+  const [startStop, setStartStop] = useState('');
+  const [endStop, setEndStop] = useState('');
+  const [fromSuggestions, setFromSuggestions] = useState([]);
+  const [toSuggestions, setToSuggestions] = useState([]);
+  const [activeInput, setActiveInput] = useState(null); // 'from' | 'to' | null
+
+  useEffect(() => {
+    if (startStop && activeInput === 'from') {
+      fetchPlaceSuggestions(startStop).then(setFromSuggestions);
+    } else {
+      setFromSuggestions([]);
+    }
+  }, [startStop, activeInput]);
+
+  useEffect(() => {
+    if (endStop && activeInput === 'to') {
+      fetchPlaceSuggestions(endStop).then(setToSuggestions);
+    } else {
+      setToSuggestions([]);
+    }
+  }, [endStop, activeInput]);
 
   const handleSearch = () => {
     navigation.navigate('Journey', { initialStart: startStop, initialEnd: endStop });
@@ -81,28 +101,88 @@ const SmartSearch = ({ navigation }) => {
   return (
     <View style={tw`bg-white rounded-3xl p-4 mb-5 shadow-sm border border-slate-100`}>
       {/* Locations & Swap */}
-      <View style={tw`relative mb-4`}>
-        <View style={tw`flex-row items-center py-3`}>
-          <Navigation color="#5F6368" size={20} />
+      <View style={tw`relative mb-4 z-20`}>
+        
+        {/* FROM INPUT */}
+        <View style={tw`flex-row items-center py-3 relative`}>
+          <Navigation color="#0D6EFD" size={20} />
           <TextInput
-            style={tw`flex-1 ml-4 text-lg text-slate-800 font-semibold`}
-            placeholder="From (e.g. Visakhapatnam)"
-            placeholderTextColor="#5F6368"
+            style={tw`flex-1 ml-4 text-base text-slate-800 font-semibold`}
+            placeholder="From (e.g. Visakhapatnam, RTC Complex)"
+            placeholderTextColor="#94A3B8"
             value={startStop}
-            onChangeText={setStartStop}
+            onFocus={() => setActiveInput('from')}
+            onChangeText={(text) => {
+              setStartStop(text);
+              setActiveInput('from');
+            }}
           />
         </View>
+
+        {/* FROM SUGGESTIONS DROPDOWN */}
+        {activeInput === 'from' && fromSuggestions.length > 0 && (
+          <View style={tw`bg-white rounded-2xl p-2 border border-slate-200 shadow-md mb-2 z-50`}>
+            {fromSuggestions.map((item, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={tw`flex-row items-center p-3 border-b border-slate-100 last:border-b-0`}
+                onPress={() => {
+                  setStartStop(item.name);
+                  setFromSuggestions([]);
+                  setActiveInput(null);
+                }}
+              >
+                <MapPin color="#0D6EFD" size={16} />
+                <View style={tw`ml-3 flex-1`}>
+                  <Text style={tw`text-xs font-bold text-slate-900`}>{item.name}</Text>
+                  <Text style={tw`text-[10px] text-slate-500`} numberOfLines={1}>{item.place_name}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <View style={tw`h-[1px] bg-slate-200 ml-9`} />
-        <View style={tw`flex-row items-center py-3`}>
-          <MapPin color="#5F6368" size={20} />
+
+        {/* TO INPUT */}
+        <View style={tw`flex-row items-center py-3 relative`}>
+          <MapPin color="#EF4444" size={20} />
           <TextInput
-            style={tw`flex-1 ml-4 text-lg text-slate-800 font-semibold`}
-            placeholder="To (e.g. Hyderabad)"
-            placeholderTextColor="#5F6368"
+            style={tw`flex-1 ml-4 text-base text-slate-800 font-semibold`}
+            placeholder="To (e.g. Anakapalle, Gajuwaka)"
+            placeholderTextColor="#94A3B8"
             value={endStop}
-            onChangeText={setEndStop}
+            onFocus={() => setActiveInput('to')}
+            onChangeText={(text) => {
+              setEndStop(text);
+              setActiveInput('to');
+            }}
           />
         </View>
+
+        {/* TO SUGGESTIONS DROPDOWN */}
+        {activeInput === 'to' && toSuggestions.length > 0 && (
+          <View style={tw`bg-white rounded-2xl p-2 border border-slate-200 shadow-md mb-2 z-50`}>
+            {toSuggestions.map((item, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={tw`flex-row items-center p-3 border-b border-slate-100 last:border-b-0`}
+                onPress={() => {
+                  setEndStop(item.name);
+                  setToSuggestions([]);
+                  setActiveInput(null);
+                }}
+              >
+                <MapPin color="#EF4444" size={16} />
+                <View style={tw`ml-3 flex-1`}>
+                  <Text style={tw`text-xs font-bold text-slate-900`}>{item.name}</Text>
+                  <Text style={tw`text-[10px] text-slate-500`} numberOfLines={1}>{item.place_name}</Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         <TouchableOpacity 
           style={tw`absolute right-2.5 top-[30px] w-9 h-9 rounded-full bg-white border border-slate-200 justify-center items-center z-10 shadow-sm`} 
           onPress={() => {
@@ -119,17 +199,13 @@ const SmartSearch = ({ navigation }) => {
       <View style={tw`flex-row items-center border-t border-b border-slate-200 py-3 mb-4`}>
         <View style={tw`items-center pr-4 border-r border-slate-200`}>
           <Clock color="#5F6368" size={16} />
-          <Text style={tw`text-xs text-slate-500 font-bold mt-1`}>JUL 2026</Text>
+          <Text style={tw`text-xs text-slate-500 font-bold mt-1`}>AUG 2026</Text>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={tw`pl-4 gap-3`}>
           <TouchableOpacity style={tw`items-center justify-center px-3 py-2 rounded-lg bg-[#0D6EFD]`}>
             <Text style={tw`text-[10px] text-blue-100 font-bold`}>Today</Text>
-            <Text style={tw`text-lg font-bold text-white`}>31</Text>
-            <Text style={tw`text-xs text-white`}>Fri</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={tw`items-center justify-center px-3 py-2 rounded-lg bg-slate-100`}>
-            <Text style={tw`text-lg font-bold text-slate-800`}>1</Text>
-            <Text style={tw`text-xs text-slate-500`}>Sat</Text>
+            <Text style={tw`text-lg font-bold text-white`}>1</Text>
+            <Text style={tw`text-xs text-white`}>Sat</Text>
           </TouchableOpacity>
           <TouchableOpacity style={tw`items-center justify-center px-3 py-2 rounded-lg bg-slate-100`}>
             <Text style={tw`text-lg font-bold text-slate-800`}>2</Text>

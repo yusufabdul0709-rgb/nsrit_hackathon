@@ -1,4 +1,4 @@
-export const MAPBOX_ACCESS_TOKEN = 'pk.YOUR_MAPBOX_PUBLIC_KEY';
+export const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoieXVzdWZhYmR1bDA3MDkiLCJhIjoiY21yejZuN3p1MGR2cjJ3cHluOTg1aTdrZiJ9.ZIQVuLFNzhTi3GppnXc6Dg';
 
 // Sample Bus Route coordinates (Visakhapatnam - Anakapalle Route)
 export const MOCK_BUS_STOPS = [
