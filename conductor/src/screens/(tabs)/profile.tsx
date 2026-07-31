@@ -7,7 +7,7 @@ import { Typography } from '../../constants/Typography';
 import { Card } from '../../components/Card';
 import { StatusChip } from '../../components/StatusChip';
 import { Button } from '../../components/Button';
-import { useRouter } from 'expo-router';
+
 
 const UserIcon = Icon.User;
 const ShieldIcon = Icon.Shield;
@@ -24,10 +24,6 @@ const TicketIcon = Icon.Ticket;
 const SmartphoneIcon = Icon.Smartphone;
 
 export default function ProfileScreen({ onLogout }: { onLogout?: () => void }) {
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
 
   const handleLogout = () => {
     if (onLogout) {

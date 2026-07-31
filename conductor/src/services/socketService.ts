@@ -1,12 +1,6 @@
 import { SERVER_HOST } from './apiClient';
 
-let io: any = null;
-try {
-  io = require('socket.io-client').io || require('socket.io-client');
-} catch (e) {
-  console.warn('socket.io-client module loading...');
-}
-
+import { io } from 'socket.io-client';
 const SOCKET_URL = `http://${SERVER_HOST}:5000`;
 
 class SocketService {

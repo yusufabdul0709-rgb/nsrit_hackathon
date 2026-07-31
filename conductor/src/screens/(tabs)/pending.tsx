@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
-import { useRouter } from 'expo-router';
+
 import { StatusChip } from '../../components/StatusChip';
 import { Card } from '../../components/Card';
 
@@ -12,17 +12,31 @@ const ArrowLeftIcon = Icon.ArrowLeft;
 const CloudOffIcon = Icon.CloudOff;
 const RefreshCwIcon = Icon.RefreshCw;
 
-const PENDING_PAYMENTS = [
-  { id: '1', dest: 'MVP Colony', type: 'Adult', amount: '₹25.00', time: '10:24 AM', passengers: 1 },
-  { id: '2', dest: 'Madhurawada', type: 'Adult', amount: '₹60.00', time: '10:02 AM', passengers: 2 },
-  { id: '3', dest: 'Gajuwaka', type: 'Ladies', amount: '₹45.00', time: '09:15 AM', passengers: 1 },
-];
+import { getPendingTransactions } from '../../services/database';
+
+// Helper function to format timestamp
+const formatTime = (timestamp: number) => {
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function PendingScreen({ onBack }: { onBack?: () => void }) {
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
+  const [pendingMembers, setPendingMembers] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const txs = await getPendingTransactions();
+        setPendingMembers(txs);
+      } catch (e) {
+        console.error('Failed to load pending transactions:', e);
+      }
+    };
+    fetchTransactions();
+    
+    // Set up a polling interval just in case they switch tabs
+    const interval = setInterval(fetchTransactions, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleBack = () => {
     if (onBack) {
@@ -40,7 +54,7 @@ export default function PendingScreen({ onBack }: { onBack?: () => void }) {
           {ArrowLeftIcon && <ArrowLeftIcon color={Colors.text.primary} size={24} />}
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Pending Payments</Text>
+          <Text style={styles.headerTitle}>Pending Members</Text>
           <Text style={styles.headerSubtitle}>Offline Transactions</Text>
         </View>
       </View>
@@ -62,28 +76,28 @@ export default function PendingScreen({ onBack }: { onBack?: () => void }) {
 
         {/* List Header */}
         <View style={styles.listHeader}>
-          <Text style={styles.sectionTitle}>Transactions ({PENDING_PAYMENTS.length})</Text>
+          <Text style={styles.sectionTitle}>Pending Members ({pendingMembers.length})</Text>
           <TouchableOpacity style={styles.syncBtn}>
             {RefreshCwIcon && <RefreshCwIcon color={Colors.primary} size={14} />}
-            <Text style={styles.syncBtnText}>Retry Sync</Text>
+            <Text style={styles.syncBtnText}>Sync Queue</Text>
           </TouchableOpacity>
         </View>
 
         {/* Transactions List */}
-        {PENDING_PAYMENTS.map((tx) => (
-          <View key={tx.id} style={styles.txRow}>
+        {pendingMembers.map((tx) => (
+          <View key={tx.transactionId} style={styles.txRow}>
             <View style={styles.txLeft}>
-              <Text style={styles.txDest}>{tx.dest}</Text>
+              <Text style={styles.txDest}>{tx.journey}</Text>
               <View style={styles.txMeta}>
-                <Text style={styles.txTime}>{tx.time}</Text>
+                <Text style={styles.txTime}>{formatTime(tx.createdAt)}</Text>
                 <View style={styles.txDot} />
-                <Text style={styles.txType}>{tx.type}</Text>
+                <Text style={styles.txType}>{tx.walletReference || 'Passenger'}</Text>
                 <View style={styles.txDot} />
-                <Text style={styles.txPassengers}>{tx.passengers} Pax</Text>
+                <Text style={styles.txPassengers}>{tx.transactionId.substring(0, 8)}</Text>
               </View>
             </View>
             <View style={styles.txRight}>
-              <Text style={styles.txAmount}>{tx.amount}</Text>
+              <Text style={styles.txAmount}>₹{tx.amount}</Text>
               <StatusChip label="Pending" status="warning" />
             </View>
           </View>

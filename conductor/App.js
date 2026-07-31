@@ -21,6 +21,7 @@ const UserIcon = Icon.User;
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
+  const [paymentDetails, setPaymentDetails] = useState(null);
 
   if (!isAuthenticated) {
     return (
@@ -33,7 +34,10 @@ export default function App() {
   const renderScreen = () => {
     switch (activeTab) {
       case 'tickets':
-        return <TicketsScreen />;
+        return <TicketsScreen onNavigate={(screen, data) => {
+          if (data) setPaymentDetails(data);
+          setActiveTab(screen);
+        }} />;
       case 'reports':
         return <ReportsScreen />;
       case 'profile':
@@ -55,7 +59,7 @@ export default function App() {
     return <PendingScreen onBack={() => setActiveTab('home')} />;
   }
   if (activeTab === 'offline-pay') {
-    return <OfflinePayScreen onBack={() => setActiveTab('tickets')} />;
+    return <OfflinePayScreen onBack={() => setActiveTab('tickets')} details={paymentDetails} />;
   }
   if (activeTab === 'upi-pay') {
     return <UpiPayScreen onBack={() => setActiveTab('tickets')} />;

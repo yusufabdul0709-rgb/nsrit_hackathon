@@ -5,7 +5,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Icon from '../../components/Icons';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
-import { useRouter } from 'expo-router';
+
 import { Button } from '../../components/Button';
 
 const { width } = Dimensions.get('window');
@@ -17,10 +17,6 @@ const QrCodeIcon = Icon.QrCode || Icon.ScanQrCode;
 export default function ScanScreen({ onBack }: { onBack?: () => void }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
 
   const handleBack = () => {
     if (onBack) {

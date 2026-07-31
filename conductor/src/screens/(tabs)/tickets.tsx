@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
-import { useRouter } from 'expo-router';
+
 
 const STOPS = [
   'AIR FORCE',
@@ -16,13 +16,19 @@ const STOPS = [
   'MADHURAWADA',
 ];
 
-export default function TicketsScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
+export default function TicketsScreen({ onNavigate }: { onNavigate?: (screen: string, data?: any) => void }) {
 
-  const [passengerType, setPassengerType] = useState<'ADULT' | 'CHILD' | 'WOMEN'>('ADULT');
+  const [adultCount, setAdultCount] = useState(1);
+  const [childCount, setChildCount] = useState(0);
+  const [womenCount, setWomenCount] = useState(0);
+
+  // Base Fares
+  const FARE_ADULT = 25;
+  const FARE_CHILD = 15;
+  const FARE_WOMEN = 25;
+
+  const totalPassengers = adultCount + childCount + womenCount;
+  const totalFare = (adultCount * FARE_ADULT) + (childCount * FARE_CHILD) + (womenCount * FARE_WOMEN);
   const [boarding, setBoarding] = useState('AIR FORCE');
   const [alighting, setAlighting] = useState('SELECT DESTINATION');
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,9 +51,9 @@ export default function TicketsScreen({ onNavigate }: { onNavigate?: (screen: st
     setModalVisible(false);
   };
 
-  const navigateTo = (screen: string) => {
+  const navigateTo = (screen: string, data?: any) => {
     if (onNavigate) {
-      onNavigate(screen);
+      onNavigate(screen, data);
     } else if (router?.push) {
       router.push(`/${screen}`);
     }
@@ -127,28 +133,79 @@ export default function TicketsScreen({ onNavigate }: { onNavigate?: (screen: st
         </View>
 
         <View style={styles.cardBox}>
-          <View style={styles.passengerTypeRow}>
-            <TouchableOpacity 
-              style={[styles.typeBtn, passengerType === 'ADULT' && styles.typeBtnActive]}
-              onPress={() => setPassengerType('ADULT')}
-            >
-              <Text style={[styles.typeBtnText, passengerType === 'ADULT' && styles.typeBtnTextActive]}>ADULT</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.typeBtn, passengerType === 'CHILD' && styles.typeBtnActive]}
-              onPress={() => setPassengerType('CHILD')}
-            >
-              <Text style={[styles.typeBtnText, passengerType === 'CHILD' && styles.typeBtnTextActive]}>CHILD</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.typeBtn, passengerType === 'WOMEN' && styles.typeBtnActive]}
-              onPress={() => setPassengerType('WOMEN')}
-            >
-              <Text style={[styles.typeBtnText, passengerType === 'WOMEN' && styles.typeBtnTextActive]}>WOMEN</Text>
-            </TouchableOpacity>
+          <View style={styles.stepperContainer}>
+            <View style={styles.stepperRow}>
+              <Text style={styles.stepperLabel}>ADULT (₹{FARE_ADULT})</Text>
+              <View style={styles.stepperControls}>
+                <TouchableOpacity 
+                  style={[styles.stepperBtn, adultCount <= 0 && styles.stepperBtnDisabled]} 
+                  disabled={adultCount <= 0}
+                  onPress={() => setAdultCount(prev => prev - 1)}
+                >
+                  <Text style={styles.stepperBtnText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepperValue}>{adultCount}</Text>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => setAdultCount(prev => prev + 1)}>
+                  <Text style={styles.stepperBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.stepperRow}>
+              <Text style={styles.stepperLabel}>CHILD (₹{FARE_CHILD})</Text>
+              <View style={styles.stepperControls}>
+                <TouchableOpacity 
+                  style={[styles.stepperBtn, childCount <= 0 && styles.stepperBtnDisabled]} 
+                  disabled={childCount <= 0}
+                  onPress={() => setChildCount(prev => prev - 1)}
+                >
+                  <Text style={styles.stepperBtnText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepperValue}>{childCount}</Text>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => setChildCount(prev => prev + 1)}>
+                  <Text style={styles.stepperBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            
+            <View style={styles.stepperRow}>
+              <Text style={styles.stepperLabel}>WOMEN (₹{FARE_WOMEN})</Text>
+              <View style={styles.stepperControls}>
+                <TouchableOpacity 
+                  style={[styles.stepperBtn, womenCount <= 0 && styles.stepperBtnDisabled]} 
+                  disabled={womenCount <= 0}
+                  onPress={() => setWomenCount(prev => prev - 1)}
+                >
+                  <Text style={styles.stepperBtnText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.stepperValue}>{womenCount}</Text>
+                <TouchableOpacity style={styles.stepperBtn} onPress={() => setWomenCount(prev => prev + 1)}>
+                  <Text style={styles.stepperBtnText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
           
-          <View style={styles.luggageRow}>
+          <View style={styles.divider} />
+          
+          <View style={styles.summaryContainer}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Total Passengers:</Text>
+              <Text style={styles.summaryValue}>{totalPassengers}</Text>
+            </View>
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Total Fare:</Text>
+              <Text style={styles.summaryFare}>₹{totalFare.toFixed(2)}</Text>
+            </View>
+            <View style={styles.summaryDetailsRow}>
+              <Text style={styles.summaryDetailsText}>
+                {adultCount > 0 ? `${adultCount} Adult ` : ''}
+                {childCount > 0 ? `${childCount} Child ` : ''}
+                {womenCount > 0 ? `${womenCount} Women ` : ''}
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.luggageRow, { marginTop: 12 }]}>
             <Text style={styles.luggageLabel}>Luggage</Text>
             <TouchableOpacity style={styles.luggageInput}>
               <Text style={styles.luggageInputText}>Select Slab(0.0 KG)</Text>
@@ -165,7 +222,14 @@ export default function TicketsScreen({ onNavigate }: { onNavigate?: (screen: st
               <Text style={styles.payBtnText}>PAY BY UPI</Text>
             </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.payBtn} onPress={() => navigateTo('offline-pay')}>
+          <TouchableOpacity 
+            style={styles.payBtn} 
+            onPress={() => navigateTo('offline-pay', { 
+              amount: totalFare, 
+              journey: `${boarding} → ${alighting}`, 
+              passengerType: `A:${adultCount},C:${childCount},W:${womenCount}` 
+            })}
+          >
             <Text style={styles.payBtnText}>PAY OFFLINE</Text>
           </TouchableOpacity>
         </View>
@@ -468,5 +532,89 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.primary,
     fontWeight: 'bold',
+  },
+  stepperContainer: {
+    gap: 12,
+    marginBottom: 4,
+  },
+  stepperRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepperLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+    flex: 1,
+  },
+  stepperControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  stepperBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F5A623',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepperBtnDisabled: {
+    backgroundColor: '#E0E0E0',
+  },
+  stepperBtnText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    lineHeight: 20,
+  },
+  stepperValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    minWidth: 20,
+    textAlign: 'center',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 12,
+  },
+  summaryContainer: {
+    backgroundColor: '#FFF8E1',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFE082',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#555',
+    fontWeight: '600',
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  summaryFare: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#F5A623',
+  },
+  summaryDetailsRow: {
+    marginTop: 4,
+  },
+  summaryDetailsText: {
+    fontSize: 12,
+    color: '#777',
+    fontStyle: 'italic',
   },
 });
