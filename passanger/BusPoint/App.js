@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, Image, StatusBar, Platform, TextInput } from 'react-native';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Image, StatusBar, Platform, TextInput } from 'react-native';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import {
   Bell, MapPin, Wallet, Search, ArrowRightLeft,
   Ticket, Bus, QrCode, Clock, Map as MapIcon,
@@ -271,25 +272,27 @@ export default function App() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.primary }]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
-      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.topBlueSection}>
-            <Header />
-            <HeroCard />
-          </View>
-          <View style={styles.bottomContent}>
-            <SmartSearch />
-            <QuickActions />
-            <LiveTracking />
-            <RecentJourneys />
-            <View style={{ height: 40 }} />
-          </View>
-        </ScrollView>
-      </View>
-      <BottomNav onScanPress={() => setCurrentScreen('scan')} />
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <SafeAreaView style={[styles.container, { backgroundColor: COLORS.primary }]}>
+        <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
+        <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            <View style={styles.topBlueSection}>
+              <Header />
+              <HeroCard />
+            </View>
+            <View style={styles.bottomContent}>
+              <SmartSearch />
+              <QuickActions />
+              <LiveTracking />
+              <RecentJourneys />
+              <View style={{ height: 40 }} />
+            </View>
+          </ScrollView>
+        </View>
+        <BottomNav onScanPress={() => setCurrentScreen('scan')} />
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 

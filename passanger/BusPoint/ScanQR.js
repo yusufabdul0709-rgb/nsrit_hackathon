@@ -3,7 +3,6 @@ import {
   StyleSheet, 
   Text, 
   View, 
-  SafeAreaView, 
   TouchableOpacity, 
   Animated, 
   Platform,
@@ -11,6 +10,7 @@ import {
   Dimensions,
   Button
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { 
   ArrowLeft, 
@@ -120,7 +120,7 @@ export default function ScanQR({ onBack }) {
       <View style={styles.scannerContainer}>
         <View style={styles.scannerFrame}>
           <CameraView 
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             facing="back"
             onBarcodeScanned={handleBarcodeScanned}
           />

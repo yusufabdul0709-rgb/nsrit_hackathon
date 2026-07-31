@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Icon from '../../components/Icons';
 import { Colors } from '../../constants/Colors';
@@ -50,7 +51,7 @@ export default function ScanScreen() {
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill}
       />
       
       {/* Overlay */}
