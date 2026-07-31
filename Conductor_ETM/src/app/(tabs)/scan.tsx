@@ -30,15 +30,8 @@ export default function ScanScreen({ onBack }: { onBack?: () => void }) {
     }
   };
 
-  useEffect(() => {
-    if (permission && !permission.granted && permission.canAskAgain) {
-      requestPermission();
-    }
-  }, [permission]);
-
   const handleBarCodeScanned = ({ type, data }: any) => {
     setScanned(true);
-    // In a real app, you'd process the ticket data here
     alert(`Ticket Scanned: ${data}`);
     setTimeout(() => setScanned(false), 2000);
   };
@@ -49,8 +42,9 @@ export default function ScanScreen({ onBack }: { onBack?: () => void }) {
   if (!permission.granted) {
     return (
       <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>No access to camera</Text>
-        <Button title="Go Back" onPress={() => handleBack()} />
+        <Text style={styles.permissionText}>Camera permission is required to scan tickets</Text>
+        <Button title="Grant Permission" onPress={requestPermission} style={{ marginBottom: 12 }} />
+        <Button title="Go Back" variant="outline" onPress={() => handleBack()} />
       </View>
     );
   }

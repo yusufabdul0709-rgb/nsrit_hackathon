@@ -44,7 +44,7 @@ export default function App() {
         return <PendingScreen onBack={() => setActiveTab('home')} />;
       case 'home':
       default:
-        return <HomeDashboard onNavigate={(screen) => setActiveTab(screen as any)} />;
+        return <HomeDashboard onNavigate={(screen) => setActiveTab(screen)} />;
     }
   };
 
