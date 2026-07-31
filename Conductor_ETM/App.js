@@ -6,6 +6,10 @@ import TicketsScreen from './src/app/(tabs)/tickets';
 import ReportsScreen from './src/app/(tabs)/reports';
 import ProfileScreen from './src/app/(tabs)/profile';
 import ScanScreen from './src/app/(tabs)/scan';
+import PendingScreen from './src/app/(tabs)/pending';
+import OfflinePayScreen from './src/app/(tabs)/offline-pay';
+import UpiPayScreen from './src/app/(tabs)/upi-pay';
+import LoginScreen from './src/app/(tabs)/login';
 import { Colors } from './src/constants/Colors';
 import * as Icon from './src/components/Icons';
 
@@ -15,7 +19,16 @@ const ChartIcon = Icon.ChartBar || Icon.BarChart3;
 const UserIcon = Icon.User;
 
 export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
+
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaProvider style={styles.container}>
+        <LoginScreen onLogin={() => setIsAuthenticated(true)} />
+      </SafeAreaProvider>
+    );
+  }
 
   const renderScreen = () => {
     switch (activeTab) {
@@ -24,9 +37,11 @@ export default function App() {
       case 'reports':
         return <ReportsScreen />;
       case 'profile':
-        return <ProfileScreen />;
+        return <ProfileScreen onLogout={() => setIsAuthenticated(false)} />;
       case 'scan':
-        return <ScanScreen />;
+        return <ScanScreen onBack={() => setActiveTab('home')} />;
+      case 'pending':
+        return <PendingScreen onBack={() => setActiveTab('home')} />;
       case 'home':
       default:
         return <HomeDashboard onNavigate={(screen) => setActiveTab(screen as any)} />;
@@ -35,6 +50,15 @@ export default function App() {
 
   if (activeTab === 'scan') {
     return <ScanScreen onBack={() => setActiveTab('home')} />;
+  }
+  if (activeTab === 'pending') {
+    return <PendingScreen onBack={() => setActiveTab('home')} />;
+  }
+  if (activeTab === 'offline-pay') {
+    return <OfflinePayScreen onBack={() => setActiveTab('tickets')} />;
+  }
+  if (activeTab === 'upi-pay') {
+    return <UpiPayScreen onBack={() => setActiveTab('tickets')} />;
   }
 
   return (

@@ -33,7 +33,6 @@ const BusIcon = Icon.Bus;
 // ─── Quick Actions ───
 const QUICK_ACTIONS = [
   { id: 'issue', icon: TicketIcon, label: 'Issue Ticket', color: Colors.primary },
-  { id: 'scan', icon: ScanIcon, label: 'Scan Ticket', color: '#7C3AED' },
   { id: 'passengers', icon: UsersIcon, label: 'Passenger\nList', color: '#0891B2' },
   { id: 'cash', icon: WalletIcon, label: 'Cash\nCollection', color: '#059669' },
   { id: 'sync', icon: RefreshCwIcon, label: 'Sync Now', color: '#D97706', badge: '18' },
@@ -68,13 +67,15 @@ export default function HomeDashboard({ onNavigate }: { onNavigate?: (screen: st
     if (id === 'issue') {
       if (onNavigate) onNavigate('tickets');
       else if (router?.push) router.push('/tickets');
-    } else if (id === 'scan') {
-      if (onNavigate) onNavigate('scan');
-      else if (router?.push) router.push('/scan');
     } else if (id === 'reports') {
       if (onNavigate) onNavigate('reports');
       else if (router?.push) router.push('/reports');
     }
+  };
+
+  const navigateToPending = () => {
+    if (onNavigate) onNavigate('pending');
+    else if (router?.push) router.push('/pending');
   };
 
   return (
@@ -83,9 +84,6 @@ export default function HomeDashboard({ onNavigate }: { onNavigate?: (screen: st
         
         {/* ──── App Header ──── */}
         <View style={styles.appHeader}>
-          <TouchableOpacity style={styles.menuBtn}>
-            {MenuIcon && <MenuIcon color={Colors.text.primary} size={22} />}
-          </TouchableOpacity>
           <View style={styles.headerBrand}>
             <View style={styles.apsrtcBadge}>
               <Text style={styles.apsrtcBadgeText}>AP</Text>
@@ -207,9 +205,10 @@ export default function HomeDashboard({ onNavigate }: { onNavigate?: (screen: st
             </View>
           </View>
           <Button
-            title="Sync Now"
-            icon={RefreshCwIcon && <RefreshCwIcon color="#FFF" size={18} />}
+            title="View Offline Payments"
+            icon={ArrowRightIcon && <ArrowRightIcon color="#FFF" size={18} />}
             style={styles.syncButton}
+            onPress={navigateToPending}
           />
         </Card>
 

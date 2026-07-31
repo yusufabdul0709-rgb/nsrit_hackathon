@@ -74,6 +74,33 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      {/* Pending is hidden from tabs */}
+      <Tabs.Screen
+        name="pending"
+        options={{
+          href: null,
+        }}
+      />
+      {/* Login is hidden from tabs */}
+      <Tabs.Screen
+        name="login"
+        options={{
+          href: null,
+        }}
+      />
+      {/* Payment screens hidden from tabs */}
+      <Tabs.Screen
+        name="offline-pay"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="upi-pay"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

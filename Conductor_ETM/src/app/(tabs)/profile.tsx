@@ -7,6 +7,7 @@ import { Typography } from '../../constants/Typography';
 import { Card } from '../../components/Card';
 import { StatusChip } from '../../components/StatusChip';
 import { Button } from '../../components/Button';
+import { useRouter } from 'expo-router';
 
 const UserIcon = Icon.User;
 const ShieldIcon = Icon.Shield;
@@ -22,7 +23,21 @@ const BusIcon = Icon.Bus;
 const TicketIcon = Icon.Ticket;
 const SmartphoneIcon = Icon.Smartphone;
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ onLogout }: { onLogout?: () => void }) {
+  let router: any = null;
+  try {
+    router = useRouter();
+  } catch (e) {}
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+    if (router?.replace) {
+      router.replace('/login');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -87,7 +102,8 @@ export default function ProfileScreen() {
           <Button 
             title="Logout" 
             variant="outline"
-            icon={LogOutIcon && <LogOutIcon color={Colors.primary} size={20} />} 
+            icon={LogOutIcon && <LogOutIcon color={Colors.primary} size={20} />}
+            onPress={handleLogout}
           />
         </View>
 
