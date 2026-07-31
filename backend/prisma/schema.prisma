@@ -32,16 +32,66 @@ model Vehicle {
   trips        Trip[]
 }
 
+// APSRTC specific AI Route & Fare Knowledge Base
+model Stop {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  stopId           String   
+  stopName         String
+  lat              Float?
+  lng              Float?
+  stageNumber      Int?
+  depot            String?
+  district         String?
+  sequenceNumber   Int?
+  highwayDistance  Float?   // Distance from origin
+  routeId          String   @db.ObjectId
+  route            Route    @relation(fields: [routeId], references: [id])
+
+  @@unique([routeId, sequenceNumber])
+}
+
 model Route {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String
-  startStop String
-  endStop   String
-  trips     Trip[]
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  routeId        String   @unique
+  serviceType    String   // Palle Velugu, Express, Metro Express, City Ordinary
+  routeName      String
+  origin         String
+  destination    String
+  totalDistance  Float?
+  totalStages    Int?
+  stops          Stop[]
+  trips          Trip[]
+}
+
+model FareModel {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  serviceType    String   @unique
+  minFare        Float
+  baseFare       Float
+  farePerKm      Float?
+  stageFare      Float?
+  luggageRules   Json?
+  passengerRules Json?
+  applicableTaxes Float?
+  roundingRules  String?
+}
+
+model PassengerCategory {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  categoryName   String   @unique // Adult, Child, Senior Citizen, etc.
+  fareMultiplier Float    @default(1.0)
+  discountFlat   Float    @default(0.0)
+}
+
+model LuggageRule {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  weightSlab     String   @unique // e.g., "0-10kg", "10-25kg"
+  additionalFare Float    @default(0.0)
 }
 
 model Trip {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tripId    String?  @unique
   routeId   String   @db.ObjectId
   vehicleId String   @db.ObjectId
   status    String   @default("SCHEDULED") // SCHEDULED, IN_PROGRESS, COMPLETED
@@ -53,13 +103,41 @@ model Trip {
 }
 
 model Ticket {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
-  tripId    String   @db.ObjectId
-  amount    Float
-  status    String   @default("VALID") // VALID, USED, CANCELLED
-  qrData    String   @unique
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
-  trip      Trip     @relation(fields: [tripId], references: [id])
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  ticketRef        String?  @unique
+  userId           String?  @db.ObjectId
+  tripId           String   @db.ObjectId
+  serviceType      String?
+  sourceStop       String?
+  destinationStop  String?
+  distance         Float?
+  amount           Float
+  status           String   @default("VALID") // VALID, USED, CANCELLED
+  qrData           String?  @unique
+  digitalSignature String?
+  orderId          String?
+  createdAt        DateTime @default(now())
+  
+  user             User?    @relation(fields: [userId], references: [id])
+  trip             Trip     @relation(fields: [tripId], references: [id])
+}
+
+model Payment {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  ticketId         String   @db.ObjectId
+  orderId          String   @unique
+  paymentId        String?
+  signature        String?
+  amount           Float
+  status           String   @default("PENDING") // PENDING, SUCCESS, FAILED
+  createdAt        DateTime @default(now())
+}
+
+model TrainingMetadata {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  version          String   @unique
+  datasetName      String
+  status           String   @default("IN_PROGRESS") // IN_PROGRESS, COMPLETED, FAILED
+  trainedAt        DateTime @default(now())
+  logs             String?
 }

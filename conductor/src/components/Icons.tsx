@@ -38,15 +38,20 @@ import {
   Ellipsis,
   CreditCard,
   ArrowRight,
+  ArrowLeft,
   CircleCheck,
   Lock,
   Smartphone,
   Headphones,
   Calendar,
   CircleDot,
+  Radio,
 } from 'lucide-react-native';
 
 export {
+  ArrowLeft,
+  Radio,
+  Radio as Nfc,
   Bell,
   MapPin,
   Ticket,

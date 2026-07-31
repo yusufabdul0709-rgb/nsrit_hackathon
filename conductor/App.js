@@ -9,6 +9,8 @@ import ScanScreen from './src/screens/(tabs)/scan';
 import PendingScreen from './src/screens/(tabs)/pending';
 import OfflinePayScreen from './src/screens/(tabs)/offline-pay';
 import UpiPayScreen from './src/screens/(tabs)/upi-pay';
+import QrGenerateScreen from './src/screens/(tabs)/qr-generate';
+import NfcPayScreen from './src/screens/(tabs)/nfc-pay';
 import LoginScreen from './src/screens/(tabs)/login';
 import { Colors } from './src/constants/Colors';
 import * as Icon from './src/components/Icons';
@@ -33,7 +35,7 @@ export default function App() {
   const renderScreen = () => {
     switch (activeTab) {
       case 'tickets':
-        return <TicketsScreen />;
+        return <TicketsScreen onNavigate={(screen) => setActiveTab(screen)} />;
       case 'reports':
         return <ReportsScreen />;
       case 'profile':
@@ -55,10 +57,16 @@ export default function App() {
     return <PendingScreen onBack={() => setActiveTab('home')} />;
   }
   if (activeTab === 'offline-pay') {
-    return <OfflinePayScreen onBack={() => setActiveTab('tickets')} />;
+    return <OfflinePayScreen onBack={() => setActiveTab('tickets')} onNavigate={(screen) => setActiveTab(screen)} />;
   }
   if (activeTab === 'upi-pay') {
     return <UpiPayScreen onBack={() => setActiveTab('tickets')} />;
+  }
+  if (activeTab === 'qr-generate') {
+    return <QrGenerateScreen onBack={() => setActiveTab('offline-pay')} />;
+  }
+  if (activeTab === 'nfc-pay') {
+    return <NfcPayScreen onBack={() => setActiveTab('offline-pay')} />;
   }
 
   return (
