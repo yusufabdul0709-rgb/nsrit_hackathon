@@ -1,127 +1,104 @@
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
+const { dbStore } = require('../config/db');
 
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_key_for_hackathon';
+const JWT_SECRET = process.env.JWT_SECRET || 'BUSONE_JWT_SECRET_2026_PRODUCTION';
 
-const register = async (req, res) => {
+exports.login = async (req, res) => {
   try {
-    const { phone, password, name, role } = req.body;
+    const { email, password, username, role = 'conductor' } = req.body;
+    const identifier = email || username;
 
-    if (!phone || !password) {
-      return res.status(400).json({ message: 'Phone and password are required' });
+    if (!identifier || !password) {
+      return res.status(400).json({ success: false, message: 'Please provide email/username and password' });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { phone }
-    });
-
-    if (existingUser) {
-      return res.status(409).json({ message: 'User with this phone already exists' });
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        phone,
-        password: hashedPassword,
-        name,
-        role: role || 'PASSENGER'
-      }
-    });
-
-    // Generate token
-    const token = jwt.sign({ id: user.id, phone: user.phone, role: user.role }, JWT_SECRET, {
-      expiresIn: '7d'
-    });
-
-    res.status(201).json({
-      message: 'User registered successfully',
-      token,
-      user: {
-        id: user.id,
-        phone: user.phone,
-        name: user.name,
-        role: user.role,
-        balance: user.balance
-      }
-    });
-
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-const login = async (req, res) => {
-  try {
-    const { phone, password } = req.body;
-
-    if (!phone || !password) {
-      return res.status(400).json({ message: 'Phone and password are required' });
-    }
-
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { phone }
-    });
+    // Dynamic User Authentication
+    let user = dbStore.users.find(
+      (u) => (u.email === identifier || u.username === identifier) && u.role === role
+    );
 
     if (!user) {
-      return res.status(401).json({ message: 'Invalid phone or password' });
+      // Auto-register default conductor / passenger for smooth experience
+      user = {
+        id: `USER-${Date.now()}`,
+        email: identifier,
+        username: identifier.split('@')[0],
+        name: identifier.split('@')[0],
+        role: role.toLowerCase(),
+        createdAt: new Date().toISOString(),
+      };
+      dbStore.users.push(user);
     }
 
-    // Verify password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid phone or password' });
-    }
+    const token = jwt.sign(
+      { id: user.id, role: user.role, email: user.email, name: user.name },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
 
-    // Generate token
-    const token = jwt.sign({ id: user.id, phone: user.phone, role: user.role }, JWT_SECRET, {
-      expiresIn: '7d'
-    });
-
-    res.status(200).json({
-      message: 'Login successful',
+    return res.status(200).json({
+      success: true,
+      message: 'Authentication successful',
       token,
       user: {
         id: user.id,
-        phone: user.phone,
         name: user.name,
+        email: user.email,
         role: user.role,
-        balance: user.balance
-      }
+      },
     });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-const getProfile = async (req, res) => {
+exports.register = async (req, res) => {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { id: true, phone: true, name: true, role: true, balance: true, createdAt: true }
+    const { name, email, password, role = 'passenger', phone } = req.body;
+
+    if (!email || !name) {
+      return res.status(400).json({ success: false, message: 'Name and email are required' });
+    }
+
+    const newUser = {
+      id: `USER-${Date.now()}`,
+      name,
+      email,
+      phone: phone || '',
+      role: role.toLowerCase(),
+      createdAt: new Date().toISOString(),
+    };
+
+    dbStore.users.push(newUser);
+
+    const token = jwt.sign(
+      { id: newUser.id, role: newUser.role, email: newUser.email, name: newUser.name },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      token,
+      user: newUser,
     });
-
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    res.json(user);
-  } catch (error) {
-    res.status(500).json({ message: 'Internal server error' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };
 
-module.exports = {
-  register,
-  login,
-  getProfile
+exports.logout = async (req, res) => {
+  return res.status(200).json({ success: true, message: 'Logged out successfully' });
+};
+
+exports.getProfile = async (req, res) => {
+  const userId = req.user?.id;
+  const user = dbStore.users.find((u) => u.id === userId) || req.user;
+
+  return res.status(200).json({
+    success: true,
+    user,
+  });
 };

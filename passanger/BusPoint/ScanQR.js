@@ -6,7 +6,8 @@ import {
   Animated, 
   Platform,
   StatusBar,
-  Dimensions
+  Dimensions,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -23,10 +24,11 @@ import {
   AlertCircle
 } from 'lucide-react-native';
 import tw from 'twrnc';
+import { api } from './src/services/api';
 
 const { width } = Dimensions.get('window');
 
-export default function ScanQR({ onBack }) {
+export default function ScanQR({ onBack, navigation }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [isOffline, setIsOffline] = useState(false);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
@@ -53,8 +55,25 @@ export default function ScanQR({ onBack }) {
     return () => clearInterval(interval);
   }, [scanLineAnim]);
 
-  const handleBarcodeScanned = ({ type, data }) => {
-    alert(`Ticket Scanned Successfully!\nData: ${data}`);
+  const handleBarcodeScanned = async ({ type, data }) => {
+    try {
+      const res = await api.post('/qr/verify', {
+        qrData: data,
+        tripId: 'TRIP-2026-400D-01',
+      });
+
+      if (res.success && res.verification) {
+        Alert.alert('QR Verified!', `Connected to Bus ${res.verification.busNumber} at stop "${res.verification.currentStop}".`);
+        const nav = navigation || onBack?.navigation;
+        if (nav) {
+          nav.navigate('BookingScreen', { tripData: res.verification });
+        }
+      } else {
+        Alert.alert('Verification Failed', res.message || 'Invalid or Expired QR Code');
+      }
+    } catch (err) {
+      Alert.alert('Error', 'Could not verify QR code with server.');
+    }
   };
 
   if (!permission) {

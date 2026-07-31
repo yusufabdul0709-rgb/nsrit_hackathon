@@ -15,6 +15,7 @@ model User {
   phone     String   @unique
   password  String
   name      String?
+  email     String?
   role      String   @default("PASSENGER") // PASSENGER, CONDUCTOR, DRIVER, ADMIN
   balance   Float    @default(0.0)
   createdAt DateTime @default(now())

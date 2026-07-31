@@ -5,10 +5,12 @@ const getHostIp = () => {
   const hostUri =
     Constants.expoConfig?.hostUri ||
     Constants.manifest?.debuggerHost ||
-    Constants.manifest2?.extra?.expoGo?.developer?.tool;
+    Constants.experienceUrl ||
+    (Constants.manifest2 && Constants.manifest2.extra?.expoGo?.developer?.tool);
 
-  if (hostUri) {
-    const ip = hostUri.split(':')[0];
+  if (hostUri && typeof hostUri === 'string') {
+    const cleanUri = hostUri.replace('exp://', '').replace('http://', '');
+    const ip = cleanUri.split(':')[0];
     if (ip && ip !== 'localhost' && ip !== '127.0.0.1') {
       return ip;
     }
@@ -17,3 +19,4 @@ const getHostIp = () => {
 };
 
 export const API_BASE_URL = `http://${getHostIp()}:5000`;
+console.log('📡 BusPoint API target URL:', API_BASE_URL);

@@ -1,239 +1,280 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Icon from '../../components/Icons';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
+import * as Icon from '../../components/Icons';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
-import { StatusChip } from '../../components/StatusChip';
 import { useRouter } from 'expo-router';
+import { conductorSocket } from '../../services/socketService';
+import { apiClient } from '../../services/apiClient';
 
 const { width } = Dimensions.get('window');
 
 const MenuIcon = Icon.Menu;
 const BellIcon = Icon.Bell;
-const TicketIcon = Icon.Ticket;
-const ScanIcon = Icon.Scan;
-const UsersIcon = Icon.Users;
-const IndianRupeeIcon = Icon.IndianRupee;
-const RefreshCwIcon = Icon.RefreshCw;
-const EllipsisIcon = Icon.Ellipsis;
-const CloudOffIcon = Icon.CloudOff;
-const WifiIcon = Icon.Wifi;
-const FileTextIcon = Icon.FileText;
-const HeadphonesIcon = Icon.Headphones;
-const ChartBarIcon = Icon.ChartBar;
-const ArrowRightIcon = Icon.ArrowRight;
-const CircleDotIcon = Icon.CircleDot;
-const WalletIcon = Icon.Wallet;
-const ClockIcon = Icon.Clock;
 const BusIcon = Icon.Bus;
+const QrCodeIcon = Icon.QrCode;
+const TicketIcon = Icon.Ticket;
+const RefreshCwIcon = Icon.RefreshCw;
+const FileTextIcon = Icon.FileText;
+const CreditCardIcon = Icon.CreditCard;
+const IndianRupeeIcon = Icon.IndianRupee;
+const UsersIcon = Icon.Users;
+const ArrowRightIcon = Icon.ArrowRight;
 
-// ─── Quick Actions ───
-const QUICK_ACTIONS = [
-  { id: 'issue', icon: TicketIcon, label: 'Issue Ticket', color: Colors.primary },
-  { id: 'passengers', icon: UsersIcon, label: 'Passenger\nList', color: '#0891B2' },
-  { id: 'cash', icon: WalletIcon, label: 'Cash\nCollection', color: '#059669' },
-  { id: 'sync', icon: RefreshCwIcon, label: 'Sync Now', color: '#D97706', badge: '18' },
-  { id: 'more', icon: EllipsisIcon, label: 'More', color: Colors.text.secondary },
-];
-
-// ─── Dashboard Stats ───
-const STATS = [
-  { label: 'Tickets Issued', value: '126', sub: 'Today', icon: TicketIcon, color: Colors.primary },
-  { label: 'Cash Collected', value: '₹2,450', sub: 'Today', icon: IndianRupeeIcon, color: '#059669' },
-  { label: 'Pending Sync', value: '18', sub: 'Transactions', icon: RefreshCwIcon, color: '#D97706' },
-  { label: 'Total Passengers', value: '142', sub: 'Today', icon: UsersIcon, color: '#7C3AED' },
-];
-
-// ─── Utility Cards ───
-const UTILITY_CARDS = [
-  { id: 'offline', icon: CloudOffIcon, title: 'Offline Mode', desc: 'Work without internet connection', status: 'Active', statusColor: Colors.status.success },
-  { id: 'counter', icon: UsersIcon, title: 'Passenger Counter', desc: 'Total passengers on board', status: '32', statusColor: Colors.primary },
-  { id: 'fare', icon: IndianRupeeIcon, title: 'Fare Table', desc: 'View all routes and fares', arrow: true },
-  { id: 'journal', icon: FileTextIcon, title: 'Journey Log', desc: "View today's activity and logs", arrow: true },
-  { id: 'reports', icon: ChartBarIcon, title: 'Reports', desc: 'View daily collection and summary', arrow: true },
-  { id: 'help', icon: HeadphonesIcon, title: 'Help & Support', desc: 'Get help and contact support', arrow: true },
-];
-
-export default function HomeDashboard({ onNavigate }: { onNavigate?: (screen: string) => void }) {
+export default function DashboardScreen() {
   let router: any = null;
   try {
     router = useRouter();
   } catch (e) {}
 
-  const handleQuickAction = (id: string) => {
-    if (id === 'issue') {
-      if (onNavigate) onNavigate('tickets');
-      else if (router?.push) router.push('/tickets');
-    } else if (id === 'reports') {
-      if (onNavigate) onNavigate('reports');
-      else if (router?.push) router.push('/reports');
+  // Dynamic Metrics starting from zero (0)
+  const [totalCollection, setTotalCollection] = useState(0);
+  const [passengerCount, setPassengerCount] = useState(0);
+  const [ticketsIssued, setTicketsIssued] = useState(0);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  useEffect(() => {
+    conductorSocket.connect();
+
+    conductorSocket.on('ticketGenerated', (ticket: any) => {
+      setTicketsIssued((prev) => prev + 1);
+      setPassengerCount((prev) => prev + 1);
+      if (ticket.paymentStatus === 'SUCCESS') {
+        setTotalCollection((prev) => prev + Number(ticket.fare || 0));
+      } else {
+        setPendingSyncCount((prev) => prev + 1);
+      }
+    });
+
+    conductorSocket.on('paymentCompleted', (data: any) => {
+      if (data.newTotalCollection !== undefined) {
+        setTotalCollection(data.newTotalCollection);
+      }
+    });
+
+    conductorSocket.on('syncCompleted', () => {
+      setPendingSyncCount(0);
+    });
+
+    fetchActiveTrip();
+  }, []);
+
+  const fetchActiveTrip = async () => {
+    try {
+      const res = await apiClient.get('/trips/active');
+      if (res.success && res.trip) {
+        setTotalCollection(res.trip.totalCollection || 0);
+        setPassengerCount(res.trip.passengerCount || 0);
+        setPendingSyncCount(res.trip.pendingSyncCount || 0);
+      }
+    } catch (e) {}
+  };
+
+  const navigateTo = (path: string) => {
+    if (router?.push) {
+      router.push(path);
     }
   };
 
-  const navigateToPending = () => {
-    if (onNavigate) onNavigate('pending');
-    else if (router?.push) router.push('/pending');
-  };
-
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         
-        {/* ──── App Header ──── */}
+        {/* App Header */}
         <View style={styles.appHeader}>
+          <TouchableOpacity style={styles.menuBtn}>
+            {MenuIcon && <MenuIcon color={Colors.text.primary} size={22} />}
+          </TouchableOpacity>
+          
           <View style={styles.headerBrand}>
             <View style={styles.apsrtcBadge}>
               <Text style={styles.apsrtcBadgeText}>AP</Text>
             </View>
             <View>
-              <Text style={styles.appTitle}>APSRTC</Text>
-              <Text style={styles.appSubtitle}>Conductor App</Text>
+              <Text style={styles.appTitle}>APSRTC ETM</Text>
+              <Text style={styles.appSubtitle}>Smart Bus Ticketing System</Text>
             </View>
           </View>
+
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.bellBtn}>
               {BellIcon && <BellIcon color={Colors.text.primary} size={22} />}
-              <View style={styles.notifBadge}><Text style={styles.notifBadgeText}>3</Text></View>
+              <View style={styles.notifBadge}>
+                <Text style={styles.notifBadgeText}>3</Text>
+              </View>
             </TouchableOpacity>
-            <StatusChip label="Online" status="success" />
           </View>
         </View>
 
-        {/* ──── Greeting Banner ──── */}
+        {/* Greeting Banner */}
         <View style={styles.greetingBanner}>
           <View style={styles.greetingGradient}>
             <View style={styles.greetingContent}>
-              <Text style={styles.greetingText}>Good Morning,</Text>
-              <Text style={styles.conductorName}>Ramesh Kumar</Text>
+              <Text style={styles.greetingText}>Namaste 🙏</Text>
+              <Text style={styles.conductorName}>Venkateswarlu K.</Text>
+              
               <View style={styles.greetingMeta}>
                 <View style={styles.idChip}>
-                  <Text style={styles.idChipText}>Conductor ID: 24568</Text>
+                  <Text style={styles.idChipText}>ID: 24568</Text>
                 </View>
                 <View style={styles.idChip}>
-                  <Text style={styles.idChipText}>KK01/9</Text>
+                  <Text style={styles.idChipText}>Depot: VSP-1</Text>
                 </View>
               </View>
+
               <View style={styles.dutyRow}>
                 <View style={styles.dutyDot} />
-                <Text style={styles.dutyText}>You are on duty</Text>
+                <Text style={styles.dutyText}>On Duty • Shift 1</Text>
               </View>
-              <Text style={styles.dutySince}>Since 07:30 AM</Text>
+              <Text style={styles.dutySince}>Started at 06:00 AM</Text>
             </View>
-            {/* Bus illustration placeholder */}
+
             <View style={styles.busIllustration}>
-              {BusIcon && <BusIcon color="rgba(255,255,255,0.25)" size={80} />}
+              {BusIcon && <BusIcon color="#FFFFFF" size={100} />}
             </View>
           </View>
         </View>
 
-        {/* ──── Service Info Row ──── */}
-        <Card style={styles.serviceCard} padding={16}>
+        {/* Service Info Card */}
+        <Card style={styles.serviceCard}>
           <View style={styles.serviceRow}>
             <View style={styles.serviceItem}>
-              <Text style={styles.serviceLabel}>Service No.</Text>
-              <Text style={styles.serviceValue}>KK01/9</Text>
-            </View>
-            <View style={styles.serviceDivider} />
-            <View style={[styles.serviceItem, { flex: 1.5 }]}>
-              <Text style={styles.serviceLabel}>Route</Text>
-              <View style={styles.routeRow}>
-                <Text style={styles.serviceValue}>Vizianagaram</Text>
-                {ArrowRightIcon && <ArrowRightIcon color={Colors.text.secondary} size={14} />}
-                <Text style={styles.serviceValue}>MVP Colony</Text>
-              </View>
+              <Text style={styles.serviceLabel}>SERVICE NO.</Text>
+              <Text style={styles.serviceValue}>400D Express</Text>
             </View>
             <View style={styles.serviceDivider} />
             <View style={styles.serviceItem}>
-              <Text style={styles.serviceLabel}>Bus No.</Text>
-              <Text style={[styles.serviceValue, { color: Colors.primary }]}>AP39Z 1234</Text>
+              <Text style={styles.serviceLabel}>BUS NO.</Text>
+              <Text style={styles.serviceValue}>AP 31 TB 4567</Text>
+            </View>
+            <View style={styles.serviceDivider} />
+            <View style={[styles.serviceItem, { flex: 1.2 }]}>
+              <Text style={styles.serviceLabel}>ROUTE</Text>
+              <Text style={styles.serviceValue} numberOfLines={1}>Vizag → Anakapalle</Text>
             </View>
           </View>
         </Card>
 
-        {/* ──── Quick Actions ──── */}
+        {/* Quick Actions Title */}
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Quick Operations</Text>
         </View>
+
+        {/* Quick Actions Grid */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsScroll}>
-          {QUICK_ACTIONS.map((action) => (
-            <TouchableOpacity
-              key={action.id}
-              style={styles.quickActionCard}
-              activeOpacity={0.7}
-              onPress={() => handleQuickAction(action.id)}
-            >
-              {action.badge && (
-                <View style={styles.qaBadge}>
-                  <Text style={styles.qaBadgeText}>{action.badge}</Text>
-                </View>
-              )}
-              <View style={[styles.qaIconCircle, { backgroundColor: action.color + '14' }]}>
-                {action.icon && <action.icon color={action.color} size={22} />}
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigateTo('/scan')}>
+            <View style={[styles.qaIconCircle, { backgroundColor: Colors.primaryLight }]}>
+              {QrCodeIcon && <QrCodeIcon color={Colors.primary} size={24} />}
+            </View>
+            <Text style={styles.qaLabel}>Generate QR</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigateTo('/tickets')}>
+            <View style={[styles.qaIconCircle, { backgroundColor: '#E0F2FE' }]}>
+              {TicketIcon && <TicketIcon color="#0284C7" size={24} />}
+            </View>
+            <Text style={styles.qaLabel}>Issue Ticket</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigateTo('/upi-pay')}>
+            <View style={[styles.qaIconCircle, { backgroundColor: '#DCFCE7' }]}>
+              {CreditCardIcon && <CreditCardIcon color="#16A34A" size={24} />}
+            </View>
+            <Text style={styles.qaLabel}>UPI Pay</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigateTo('/pending')}>
+            <View style={[styles.qaIconCircle, { backgroundColor: '#FEF3C7' }]}>
+              {RefreshCwIcon && <RefreshCwIcon color="#D97706" size={24} />}
+            </View>
+            {pendingSyncCount > 0 && (
+              <View style={styles.qaBadge}>
+                <Text style={styles.qaBadgeText}>{pendingSyncCount}</Text>
               </View>
-              <Text style={styles.qaLabel}>{action.label}</Text>
-            </TouchableOpacity>
-          ))}
+            )}
+            <Text style={styles.qaLabel}>Sync Queue</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.quickActionCard} onPress={() => navigateTo('/reports')}>
+            <View style={[styles.qaIconCircle, { backgroundColor: '#F3E8FF' }]}>
+              {FileTextIcon && <FileTextIcon color="#9333EA" size={24} />}
+            </View>
+            <Text style={styles.qaLabel}>Waybill</Text>
+          </TouchableOpacity>
         </ScrollView>
 
-        {/* ──── Dashboard Statistics ──── */}
+        {/* Dashboard Stats */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Today's Collection Summary</Text>
+        </View>
+
         <View style={styles.statsGrid}>
-          {STATS.map((stat, i) => (
-            <Card key={i} style={styles.statCard} padding={16}>
-              <View style={[styles.statIconCircle, { backgroundColor: stat.color + '14' }]}>
-                {stat.icon && <stat.icon color={stat.color} size={18} />}
-              </View>
-              <Text style={styles.statLabel}>{stat.label}</Text>
-              <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
-              <Text style={styles.statSub}>{stat.sub}</Text>
-            </Card>
-          ))}
+          {/* Collection Stat */}
+          <Card style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#DCFCE7' }]}>
+              {IndianRupeeIcon && <IndianRupeeIcon color="#16A34A" size={20} />}
+            </View>
+            <Text style={styles.statLabel}>Total Collection</Text>
+            <Text style={styles.statValue}>₹{totalCollection}</Text>
+            <Text style={styles.statSub}>Starting from ₹0</Text>
+          </Card>
+
+          {/* Passengers Stat */}
+          <Card style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#E0F2FE' }]}>
+              {UsersIcon && <UsersIcon color="#0284C7" size={20} />}
+            </View>
+            <Text style={styles.statLabel}>Passengers</Text>
+            <Text style={styles.statValue}>{passengerCount}</Text>
+            <Text style={styles.statSub}>Total Passengers</Text>
+          </Card>
+
+          {/* Tickets Issued Stat */}
+          <Card style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#F3E8FF' }]}>
+              {TicketIcon && <TicketIcon color="#9333EA" size={20} />}
+            </View>
+            <Text style={styles.statLabel}>Tickets Issued</Text>
+            <Text style={styles.statValue}>{ticketsIssued}</Text>
+            <Text style={styles.statSub}>ETM Receipts</Text>
+          </Card>
+
+          {/* Pending Sync Stat */}
+          <Card style={styles.statCard}>
+            <View style={[styles.statIconCircle, { backgroundColor: '#FEF3C7' }]}>
+              {RefreshCwIcon && <RefreshCwIcon color="#D97706" size={20} />}
+            </View>
+            <Text style={styles.statLabel}>Pending Sync</Text>
+            <Text style={[styles.statValue, { color: pendingSyncCount > 0 ? Colors.status.warning : Colors.text.primary }]}>
+              {pendingSyncCount}
+            </Text>
+            <Text style={styles.statSub}>Offline Transactions</Text>
+          </Card>
         </View>
 
-        {/* ──── Pending Transactions ──── */}
-        <Card style={styles.pendingCard} padding={20}>
-          <View style={styles.pendingHeader}>
-            <View style={[styles.pendingIconCircle]}>
-              {RefreshCwIcon && <RefreshCwIcon color={Colors.status.warning} size={22} />}
-            </View>
-            <View style={styles.pendingInfo}>
-              <Text style={styles.pendingTitle}>Pending Transactions</Text>
-              <Text style={styles.pendingDesc}>18 transactions pending to sync</Text>
-              <Text style={styles.pendingTime}>Last sync: Today, 07:30 AM</Text>
-            </View>
-          </View>
-          <Button
-            title="View Offline Payments"
-            icon={ArrowRightIcon && <ArrowRightIcon color="#FFF" size={18} />}
-            style={styles.syncButton}
-            onPress={navigateToPending}
-          />
-        </Card>
-
-        {/* ──── Utility Cards Grid ──── */}
-        <View style={styles.utilityGrid}>
-          {UTILITY_CARDS.map((card) => (
-            <TouchableOpacity key={card.id} style={styles.utilityCard} activeOpacity={0.7}>
-              <View style={[styles.utilityIconCircle, { backgroundColor: Colors.primaryLight }]}>
-                {card.icon && <card.icon color={Colors.primary} size={20} />}
+        {/* Pending Sync Alert Card */}
+        {pendingSyncCount > 0 && (
+          <Card style={styles.pendingCard}>
+            <View style={styles.pendingHeader}>
+              <View style={styles.pendingIconCircle}>
+                {RefreshCwIcon && <RefreshCwIcon color={Colors.status.warning} size={24} />}
               </View>
-              <Text style={styles.utilityTitle}>{card.title}</Text>
-              <Text style={styles.utilityDesc}>{card.desc}</Text>
-              {card.status && (
-                <Text style={[styles.utilityStatus, { color: card.statusColor }]}>{card.status}</Text>
-              )}
-              {card.arrow && (
-                <View style={styles.utilityArrow}>
-                  {ArrowRightIcon && <ArrowRightIcon color={Colors.primary} size={16} />}
-                </View>
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
+              <View style={styles.pendingInfo}>
+                <Text style={styles.pendingTitle}>{pendingSyncCount} Offline Transactions Pending</Text>
+                <Text style={styles.pendingDesc}>Saved locally in SQLite queue while offline.</Text>
+              </View>
+            </View>
+            <Button
+              title="Sync Now with Server"
+              style={styles.syncButton}
+              onPress={() => navigateTo('/pending')}
+            />
+          </Card>
+        )}
 
-        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -435,12 +476,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
     marginHorizontal: 12,
   },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
 
   // ──── Section Title ────
   sectionRow: {
@@ -572,54 +607,7 @@ const styles = StyleSheet.create({
     color: Colors.text.secondary,
     marginBottom: 2,
   },
-  pendingTime: {
-    ...Typography.caption,
-    color: Colors.text.light,
-  },
   syncButton: {
     backgroundColor: Colors.primary,
-  },
-
-  // ──── Utility Cards ────
-  utilityGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    gap: 12,
-  },
-  utilityCard: {
-    width: (width - 52) / 2,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  utilityIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  utilityTitle: {
-    ...Typography.cardTitle,
-    color: Colors.text.primary,
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  utilityDesc: {
-    ...Typography.caption,
-    color: Colors.text.secondary,
-    marginBottom: 8,
-    lineHeight: 16,
-  },
-  utilityStatus: {
-    fontSize: 13,
-    fontWeight: 'bold',
-  },
-  utilityArrow: {
-    alignSelf: 'flex-start',
   },
 });

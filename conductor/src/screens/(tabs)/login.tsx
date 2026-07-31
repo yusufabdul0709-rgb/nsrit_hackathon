@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
 
 import { useRouter } from 'expo-router';
+import { apiClient } from '../../services/apiClient';
 
 const UserIcon = Icon.User;
 const LockIcon = Icon.Lock;
@@ -19,13 +21,34 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
 
   const [conductorId, setConductorId] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (onLogin) {
-      onLogin();
+  const handleLogin = async () => {
+    if (!conductorId || !password) {
+      Alert.alert('Error', 'Please enter your conductor ID and password');
+      return;
     }
-    if (router?.replace) {
-      router.replace('/');
+
+    setLoading(true);
+    try {
+      const res = await apiClient.post('/auth/login', {
+        username: conductorId,
+        password,
+        role: 'conductor',
+      });
+
+      if (res.success && res.token) {
+        await AsyncStorage.setItem('userToken', res.token);
+        await AsyncStorage.setItem('userInfo', JSON.stringify(res.user));
+        if (onLogin) onLogin();
+        if (router?.replace) router.replace('/');
+      } else {
+        Alert.alert('Login Failed', res.message || 'Invalid conductor credentials');
+      }
+    } catch (err) {
+      Alert.alert('Network Error', 'Failed to reach server. Please check backend connection.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,7 +82,7 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
                   placeholderTextColor={Colors.text.light}
                   value={conductorId}
                   onChangeText={setConductorId}
-                  keyboardType="numeric"
+                  autoCapitalize="none"
                 />
               </View>
             </View>
@@ -83,9 +106,15 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.loginBtn} activeOpacity={0.8} onPress={handleLogin}>
-              <Text style={styles.loginBtnText}>Secure Login</Text>
-              {ArrowRightIcon && <ArrowRightIcon color="#FFFFFF" size={18} />}
+            <TouchableOpacity style={styles.loginBtn} activeOpacity={0.8} onPress={handleLogin} disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <>
+                  <Text style={styles.loginBtnText}>Secure Login</Text>
+                  {ArrowRightIcon && <ArrowRightIcon color="#FFFFFF" size={18} />}
+                </>
+              )}
             </TouchableOpacity>
           </View>
 

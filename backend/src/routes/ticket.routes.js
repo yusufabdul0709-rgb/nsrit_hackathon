@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const ticketController = require('../controllers/ticket.controller');
-const authenticateToken = require('../middlewares/auth.middleware');
+const authenticateJWT = require('../middlewares/auth.middleware');
 
-router.post('/book', authenticateToken, ticketController.bookTicket);
-router.get('/my-tickets', authenticateToken, ticketController.getUserTickets);
+router.post('/create', authenticateJWT, ticketController.createTicket);
+router.post('/book', authenticateJWT, ticketController.createTicket);
+router.get('/history', authenticateJWT, ticketController.getTicketHistory);
+router.get('/:id', ticketController.getTicketById);
 
 module.exports = router;
