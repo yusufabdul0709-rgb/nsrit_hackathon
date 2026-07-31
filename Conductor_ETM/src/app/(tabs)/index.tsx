@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Icon from '../../components/Icons';
 import { Colors } from '../../constants/Colors';
@@ -9,156 +9,234 @@ import { Button } from '../../components/Button';
 import { StatusChip } from '../../components/StatusChip';
 import { useRouter } from 'expo-router';
 
+const { width } = Dimensions.get('window');
+
+const MenuIcon = Icon.Menu;
 const BellIcon = Icon.Bell;
-const MapPinIcon = Icon.MapPin;
 const TicketIcon = Icon.Ticket;
-const ScanIcon = Icon.Scan || Icon.Maximize;
-const SignalIcon = Icon.Signal || Icon.Wifi;
+const ScanIcon = Icon.Scan;
 const UsersIcon = Icon.Users;
 const IndianRupeeIcon = Icon.IndianRupee;
+const RefreshCwIcon = Icon.RefreshCw;
+const EllipsisIcon = Icon.Ellipsis;
+const CloudOffIcon = Icon.CloudOff;
+const WifiIcon = Icon.Wifi;
+const FileTextIcon = Icon.FileText;
+const HeadphonesIcon = Icon.Headphones;
+const ChartBarIcon = Icon.ChartBar;
+const ArrowRightIcon = Icon.ArrowRight;
+const CircleDotIcon = Icon.CircleDot;
+const WalletIcon = Icon.Wallet;
 const ClockIcon = Icon.Clock;
-const RefreshCwIcon = Icon.RefreshCw || Icon.RefreshCcw || Icon.RotateCw;
-const AlertCircleIcon = Icon.AlertCircle || Icon.CircleAlert || Icon.AlertTriangle;
-const HistoryIcon = Icon.History;
-const BusIcon = Icon.Bus || Icon.Truck;
+const BusIcon = Icon.Bus;
 
-export default function HomeDashboard() {
-  const router = useRouter();
+// ─── Quick Actions ───
+const QUICK_ACTIONS = [
+  { id: 'issue', icon: TicketIcon, label: 'Issue Ticket', color: Colors.primary },
+  { id: 'scan', icon: ScanIcon, label: 'Scan Ticket', color: '#7C3AED' },
+  { id: 'passengers', icon: UsersIcon, label: 'Passenger\nList', color: '#0891B2' },
+  { id: 'cash', icon: WalletIcon, label: 'Cash\nCollection', color: '#059669' },
+  { id: 'sync', icon: RefreshCwIcon, label: 'Sync Now', color: '#D97706', badge: '18' },
+  { id: 'more', icon: EllipsisIcon, label: 'More', color: Colors.text.secondary },
+];
+
+// ─── Dashboard Stats ───
+const STATS = [
+  { label: 'Tickets Issued', value: '126', sub: 'Today', icon: TicketIcon, color: Colors.primary },
+  { label: 'Cash Collected', value: '₹2,450', sub: 'Today', icon: IndianRupeeIcon, color: '#059669' },
+  { label: 'Pending Sync', value: '18', sub: 'Transactions', icon: RefreshCwIcon, color: '#D97706' },
+  { label: 'Total Passengers', value: '142', sub: 'Today', icon: UsersIcon, color: '#7C3AED' },
+];
+
+// ─── Utility Cards ───
+const UTILITY_CARDS = [
+  { id: 'offline', icon: CloudOffIcon, title: 'Offline Mode', desc: 'Work without internet connection', status: 'Active', statusColor: Colors.status.success },
+  { id: 'counter', icon: UsersIcon, title: 'Passenger Counter', desc: 'Total passengers on board', status: '32', statusColor: Colors.primary },
+  { id: 'fare', icon: IndianRupeeIcon, title: 'Fare Table', desc: 'View all routes and fares', arrow: true },
+  { id: 'journal', icon: FileTextIcon, title: 'Journey Log', desc: "View today's activity and logs", arrow: true },
+  { id: 'reports', icon: ChartBarIcon, title: 'Reports', desc: 'View daily collection and summary', arrow: true },
+  { id: 'help', icon: HeadphonesIcon, title: 'Help & Support', desc: 'Get help and contact support', arrow: true },
+];
+
+export default function HomeDashboard({ onNavigate }: { onNavigate?: (screen: string) => void }) {
+  let router: any = null;
+  try {
+    router = useRouter();
+  } catch (e) {}
+
+  const handleQuickAction = (id: string) => {
+    if (id === 'issue') {
+      if (onNavigate) onNavigate('tickets');
+      else if (router?.push) router.push('/tickets');
+    } else if (id === 'scan') {
+      if (onNavigate) onNavigate('scan');
+      else if (router?.push) router.push('/scan');
+    } else if (id === 'reports') {
+      if (onNavigate) onNavigate('reports');
+      else if (router?.push) router.push('/reports');
+    }
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         
-        {/* Top Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Good Morning,</Text>
-            <Text style={styles.conductorName}>Ramesh Kumar 👋</Text>
-            <View style={styles.dutyStatusContainer}>
-              <View style={styles.onlineDot} />
-              <Text style={styles.dutyStatusText}>Duty Status: Online</Text>
+        {/* ──── App Header ──── */}
+        <View style={styles.appHeader}>
+          <TouchableOpacity style={styles.menuBtn}>
+            {MenuIcon && <MenuIcon color={Colors.text.primary} size={22} />}
+          </TouchableOpacity>
+          <View style={styles.headerBrand}>
+            <View style={styles.apsrtcBadge}>
+              <Text style={styles.apsrtcBadgeText}>AP</Text>
+            </View>
+            <View>
+              <Text style={styles.appTitle}>APSRTC</Text>
+              <Text style={styles.appSubtitle}>Conductor App</Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.iconButton}>
-              {BellIcon && <BellIcon color={Colors.text.primary} size={24} />}
+            <TouchableOpacity style={styles.bellBtn}>
+              {BellIcon && <BellIcon color={Colors.text.primary} size={22} />}
+              <View style={styles.notifBadge}><Text style={styles.notifBadgeText}>3</Text></View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.profileAvatar} onPress={() => router.push('/profile')}>
-              <Text style={styles.avatarText}>RK</Text>
-            </TouchableOpacity>
+            <StatusChip label="Online" status="success" />
           </View>
         </View>
 
-        {/* Hero Card */}
-        <Card padding={0} style={styles.heroCard}>
-          <View style={styles.heroHeader}>
-            <View>
-              <Text style={styles.busNumber}>AP 28 Z 1234</Text>
-              <Text style={styles.routeText}>Service 442 • Trip 2</Text>
+        {/* ──── Greeting Banner ──── */}
+        <View style={styles.greetingBanner}>
+          <View style={styles.greetingGradient}>
+            <View style={styles.greetingContent}>
+              <Text style={styles.greetingText}>Good Morning,</Text>
+              <Text style={styles.conductorName}>Ramesh Kumar</Text>
+              <View style={styles.greetingMeta}>
+                <View style={styles.idChip}>
+                  <Text style={styles.idChipText}>Conductor ID: 24568</Text>
+                </View>
+                <View style={styles.idChip}>
+                  <Text style={styles.idChipText}>KK01/9</Text>
+                </View>
+              </View>
+              <View style={styles.dutyRow}>
+                <View style={styles.dutyDot} />
+                <Text style={styles.dutyText}>You are on duty</Text>
+              </View>
+              <Text style={styles.dutySince}>Since 07:30 AM</Text>
             </View>
-            {BusIcon && <BusIcon color="#FFF" size={32} />}
+            {/* Bus illustration placeholder */}
+            <View style={styles.busIllustration}>
+              {BusIcon && <BusIcon color="rgba(255,255,255,0.25)" size={80} />}
+            </View>
           </View>
-          
-          <View style={styles.heroBody}>
-            <View style={styles.routeInfo}>
-              <View style={styles.stopInfo}>
-                <Text style={styles.stopLabel}>Current Stop</Text>
-                <Text style={styles.stopName}>Vizag Complex</Text>
-              </View>
-              <View style={styles.stopDivider} />
-              <View style={styles.stopInfo}>
-                <Text style={styles.stopLabel}>Next Stop (12 min)</Text>
-                <Text style={styles.stopName}>MVP Colony</Text>
-              </View>
-            </View>
+        </View>
 
-            <View style={styles.heroStats}>
-              <View style={styles.statItem}>
-                {UsersIcon && <UsersIcon color={Colors.primary} size={20} />}
-                <Text style={styles.statValue}>42</Text>
-                <Text style={styles.statLabel}>Onboard</Text>
-              </View>
-              <View style={styles.statItem}>
-                {IndianRupeeIcon && <IndianRupeeIcon color={Colors.status.success} size={20} />}
-                <Text style={styles.statValue}>₹4.2k</Text>
-                <Text style={styles.statLabel}>Collection</Text>
-              </View>
-              <View style={styles.statItem}>
-                {ClockIcon && <ClockIcon color={Colors.status.warning} size={20} />}
-                <Text style={styles.statValue}>04:20</Text>
-                <Text style={styles.statLabel}>Duty Time</Text>
+        {/* ──── Service Info Row ──── */}
+        <Card style={styles.serviceCard} padding={16}>
+          <View style={styles.serviceRow}>
+            <View style={styles.serviceItem}>
+              <Text style={styles.serviceLabel}>Service No.</Text>
+              <Text style={styles.serviceValue}>KK01/9</Text>
+            </View>
+            <View style={styles.serviceDivider} />
+            <View style={[styles.serviceItem, { flex: 1.5 }]}>
+              <Text style={styles.serviceLabel}>Route</Text>
+              <View style={styles.routeRow}>
+                <Text style={styles.serviceValue}>Vizianagaram</Text>
+                {ArrowRightIcon && <ArrowRightIcon color={Colors.text.secondary} size={14} />}
+                <Text style={styles.serviceValue}>MVP Colony</Text>
               </View>
             </View>
-            
-            <View style={styles.heroActions}>
-              <Button 
-                title="Issue Ticket" 
-                icon={TicketIcon && <TicketIcon color="#FFF" size={20} />} 
-                style={{ flex: 1 }}
-                onPress={() => router.push('/tickets')}
-              />
+            <View style={styles.serviceDivider} />
+            <View style={styles.serviceItem}>
+              <Text style={styles.serviceLabel}>Bus No.</Text>
+              <Text style={[styles.serviceValue, { color: Colors.primary }]}>AP39Z 1234</Text>
             </View>
           </View>
         </Card>
 
-        {/* Quick Actions Grid */}
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.quickActionsGrid}>
-          <QuickAction icon={TicketIcon && <TicketIcon color={Colors.primary} />} label="Issue Ticket" onPress={() => router.push('/tickets')} />
-          <QuickAction icon={ScanIcon && <ScanIcon color={Colors.primary} />} label="Scan QR" onPress={() => router.push('/scan')} />
-          <QuickAction icon={SignalIcon && <SignalIcon color={Colors.primary} />} label="Offline Ticket" onPress={() => {}} />
-          <QuickAction icon={UsersIcon && <UsersIcon color={Colors.primary} />} label="Passenger Count" onPress={() => {}} />
-          <QuickAction icon={IndianRupeeIcon && <IndianRupeeIcon color={Colors.primary} />} label="Cash Collect" onPress={() => {}} />
-          <QuickAction icon={IndianRupeeIcon && <IndianRupeeIcon color={Colors.primary} />} label="UPI Collect" onPress={() => {}} />
-          <QuickAction icon={RefreshCwIcon && <RefreshCwIcon color={Colors.primary} />} label="Sync Now" onPress={() => {}} badge="3" />
-          <QuickAction icon={AlertCircleIcon && <AlertCircleIcon color={Colors.status.danger} />} label="Emergency" onPress={() => {}} />
+        {/* ──── Quick Actions ──── */}
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsScroll}>
+          {QUICK_ACTIONS.map((action) => (
+            <TouchableOpacity
+              key={action.id}
+              style={styles.quickActionCard}
+              activeOpacity={0.7}
+              onPress={() => handleQuickAction(action.id)}
+            >
+              {action.badge && (
+                <View style={styles.qaBadge}>
+                  <Text style={styles.qaBadgeText}>{action.badge}</Text>
+                </View>
+              )}
+              <View style={[styles.qaIconCircle, { backgroundColor: action.color + '14' }]}>
+                {action.icon && <action.icon color={action.color} size={22} />}
+              </View>
+              <Text style={styles.qaLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* ──── Dashboard Statistics ──── */}
+        <View style={styles.statsGrid}>
+          {STATS.map((stat, i) => (
+            <Card key={i} style={styles.statCard} padding={16}>
+              <View style={[styles.statIconCircle, { backgroundColor: stat.color + '14' }]}>
+                {stat.icon && <stat.icon color={stat.color} size={18} />}
+              </View>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+              <Text style={[styles.statValue, { color: stat.color }]}>{stat.value}</Text>
+              <Text style={styles.statSub}>{stat.sub}</Text>
+            </Card>
+          ))}
         </View>
 
-        {/* Live Route Timeline */}
-        <Text style={[styles.sectionTitle, { marginTop: 12 }]}>Live Route</Text>
-        <Card style={styles.liveRouteCard}>
-          <View style={styles.timelineItem}>
-            <View style={[styles.timelineDot, styles.timelineDotActive]} />
-            <View style={styles.timelineContent}>
-              <Text style={styles.timelineStopActive}>Vizag Complex</Text>
-              <Text style={styles.timelineTime}>Current</Text>
+        {/* ──── Pending Transactions ──── */}
+        <Card style={styles.pendingCard} padding={20}>
+          <View style={styles.pendingHeader}>
+            <View style={[styles.pendingIconCircle]}>
+              {RefreshCwIcon && <RefreshCwIcon color={Colors.status.warning} size={22} />}
+            </View>
+            <View style={styles.pendingInfo}>
+              <Text style={styles.pendingTitle}>Pending Transactions</Text>
+              <Text style={styles.pendingDesc}>18 transactions pending to sync</Text>
+              <Text style={styles.pendingTime}>Last sync: Today, 07:30 AM</Text>
             </View>
           </View>
-          <View style={styles.timelineLine} />
-          <View style={styles.timelineItem}>
-            <View style={[styles.timelineDot, styles.timelineDotUpcoming]} />
-            <View style={styles.timelineContent}>
-              <Text style={styles.timelineStopUpcoming}>MVP Colony</Text>
-              <Text style={styles.timelineTime}>ETA 10:45 AM (12 min)</Text>
-            </View>
-          </View>
-          <View style={styles.timelineLine} />
-          <View style={styles.timelineItem}>
-            <View style={[styles.timelineDot, styles.timelineDotUpcoming]} />
-            <View style={styles.timelineContent}>
-              <Text style={styles.timelineStopUpcoming}>Madhurawada</Text>
-              <Text style={styles.timelineTime}>ETA 11:15 AM</Text>
-            </View>
-          </View>
+          <Button
+            title="Sync Now"
+            icon={RefreshCwIcon && <RefreshCwIcon color="#FFF" size={18} />}
+            style={styles.syncButton}
+          />
         </Card>
-        
-        <View style={{ height: 40 }} />
+
+        {/* ──── Utility Cards Grid ──── */}
+        <View style={styles.utilityGrid}>
+          {UTILITY_CARDS.map((card) => (
+            <TouchableOpacity key={card.id} style={styles.utilityCard} activeOpacity={0.7}>
+              <View style={[styles.utilityIconCircle, { backgroundColor: Colors.primaryLight }]}>
+                {card.icon && <card.icon color={Colors.primary} size={20} />}
+              </View>
+              <Text style={styles.utilityTitle}>{card.title}</Text>
+              <Text style={styles.utilityDesc}>{card.desc}</Text>
+              {card.status && (
+                <Text style={[styles.utilityStatus, { color: card.statusColor }]}>{card.status}</Text>
+              )}
+              {card.arrow && (
+                <View style={styles.utilityArrow}>
+                  {ArrowRightIcon && <ArrowRightIcon color={Colors.primary} size={16} />}
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function QuickAction({ icon, label, onPress, badge }: any) {
-  return (
-    <TouchableOpacity style={styles.quickActionCard} onPress={onPress} activeOpacity={0.7}>
-      {badge && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{badge}</Text>
-        </View>
-      )}
-      <View style={styles.quickActionIcon}>{icon}</View>
-      <Text style={styles.quickActionLabel}>{label}</Text>
-    </TouchableOpacity>
   );
 }
 
@@ -168,250 +246,381 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scrollContent: {
-    padding: 24,
+    paddingBottom: 16,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  greeting: {
-    ...Typography.body,
-    color: Colors.text.secondary,
-  },
-  conductorName: {
-    ...Typography.heading,
-    color: Colors.text.primary,
-    marginTop: 4,
-  },
-  dutyStatusContainer: {
+
+  // ──── App Header ────
+  appHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    backgroundColor: '#E7F9F0',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  menuBtn: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
+    backgroundColor: Colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  onlineDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.status.success,
-    marginRight: 6,
+  headerBrand: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+    gap: 10,
   },
-  dutyStatusText: {
-    ...Typography.caption,
-    color: Colors.status.success,
-    fontWeight: '600',
+  apsrtcBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  apsrtcBadgeText: {
+    color: '#FFF',
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  appTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+    letterSpacing: 0.5,
+  },
+  appSubtitle: {
+    fontSize: 11,
+    color: Colors.text.secondary,
+    marginTop: -1,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 16,
+    gap: 12,
   },
-  iconButton: {
-    padding: 8,
-    backgroundColor: Colors.card,
+  bellBtn: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  profileAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.background,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    position: 'relative',
   },
-  avatarText: {
-    ...Typography.body,
+  notifBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: Colors.status.danger,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
+  notifBadgeText: {
     color: '#FFF',
+    fontSize: 9,
     fontWeight: 'bold',
   },
-  heroCard: {
-    marginBottom: 32,
+
+  // ──── Greeting Banner ────
+  greetingBanner: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    marginBottom: 16,
+    borderRadius: 24,
     overflow: 'hidden',
   },
-  heroHeader: {
+  greetingGradient: {
     backgroundColor: Colors.primary,
+    borderRadius: 24,
     padding: 24,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    minHeight: 180,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  busNumber: {
-    ...Typography.section,
-    color: '#FFF',
+  greetingContent: {
+    flex: 1,
+    zIndex: 1,
   },
-  routeText: {
-    ...Typography.body,
+  greetingText: {
+    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
+  },
+  conductorName: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     marginTop: 4,
+    marginBottom: 12,
   },
-  heroBody: {
-    padding: 24,
-  },
-  routeInfo: {
+  greetingMeta: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
+    gap: 8,
+    marginBottom: 12,
   },
-  stopInfo: {
+  idChip: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  idChipText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  dutyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  dutyDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#34D399',
+  },
+  dutyText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  dutySince: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    marginLeft: 14,
+  },
+  busIllustration: {
+    position: 'absolute',
+    right: 10,
+    bottom: 10,
+    opacity: 0.4,
+  },
+
+  // ──── Service Info ────
+  serviceCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  serviceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  serviceItem: {
     flex: 1,
   },
-  stopLabel: {
+  serviceLabel: {
     ...Typography.caption,
     color: Colors.text.secondary,
     marginBottom: 4,
   },
-  stopName: {
-    ...Typography.cardTitle,
+  serviceValue: {
+    fontSize: 14,
+    fontWeight: '700',
     color: Colors.text.primary,
   },
-  stopDivider: {
+  serviceDivider: {
     width: 1,
+    height: 36,
     backgroundColor: Colors.border,
-    marginHorizontal: 16,
+    marginHorizontal: 12,
   },
-  heroStats: {
+  routeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+
+  // ──── Section Title ────
+  sectionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: Colors.background,
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
-  },
-  statItem: {
     alignItems: 'center',
-  },
-  statValue: {
-    ...Typography.cardTitle,
-    color: Colors.text.primary,
-    marginTop: 8,
-    marginBottom: 2,
-  },
-  statLabel: {
-    ...Typography.caption,
-    color: Colors.text.secondary,
-  },
-  heroActions: {
-    flexDirection: 'row',
-    gap: 16,
+    paddingHorizontal: 20,
+    marginBottom: 12,
   },
   sectionTitle: {
     ...Typography.section,
     color: Colors.text.primary,
-    marginBottom: 16,
   },
-  quickActionsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 32,
+
+  // ──── Quick Actions ────
+  quickActionsScroll: {
+    paddingHorizontal: 20,
+    gap: 12,
+    paddingBottom: 4,
+    marginBottom: 20,
   },
   quickActionCard: {
-    width: '21.5%', // roughly 4 in a row, using flex wouldn't wrap properly with precise gaps easily without a list, but this is fine for static grid
-    minWidth: 75,
-    backgroundColor: Colors.card,
-    padding: 12,
-    borderRadius: 16,
+    width: 80,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
     position: 'relative',
   },
-  quickActionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#F0F4FF', // Light blue tint
+  qaIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
+    backgroundColor: Colors.primaryLight,
   },
-  quickActionLabel: {
-    ...Typography.caption,
-    fontSize: 12,
+  qaLabel: {
+    ...Typography.quickActionLabel,
     color: Colors.text.primary,
     textAlign: 'center',
-    fontWeight: '500',
+    lineHeight: 14,
   },
-  badge: {
+  qaBadge: {
     position: 'absolute',
-    top: -6,
-    right: -6,
+    top: -4,
+    right: 4,
     backgroundColor: Colors.status.danger,
-    width: 20,
+    minWidth: 20,
     height: 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1,
+    paddingHorizontal: 5,
+    zIndex: 2,
     borderWidth: 2,
-    borderColor: '#FFF',
+    borderColor: Colors.background,
   },
-  badgeText: {
+  qaBadgeText: {
     color: '#FFF',
     fontSize: 10,
     fontWeight: 'bold',
   },
-  liveRouteCard: {
-    paddingVertical: 32,
+
+  // ──── Dashboard Stats ────
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 20,
   },
-  timelineItem: {
+  statCard: {
+    width: (width - 52) / 2,
+  },
+  statIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  statLabel: {
+    ...Typography.statLabel,
+    color: Colors.text.secondary,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statValue: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
+    marginBottom: 2,
+  },
+  statSub: {
+    ...Typography.caption,
+    color: Colors.text.light,
+  },
+
+  // ──── Pending Transactions ────
+  pendingCard: {
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  pendingHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    marginBottom: 16,
+    gap: 14,
   },
-  timelineDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginTop: 4,
-    marginRight: 16,
+  pendingIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: Colors.status.warningBg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  timelineDotActive: {
-    backgroundColor: Colors.primary,
-    borderWidth: 4,
-    borderColor: '#D9E6FF',
-  },
-  timelineDotUpcoming: {
-    backgroundColor: Colors.border,
-  },
-  timelineLine: {
-    width: 2,
-    height: 40,
-    backgroundColor: Colors.border,
-    marginLeft: 7, // half of 16 - 1
-    marginVertical: -8,
-  },
-  timelineContent: {
+  pendingInfo: {
     flex: 1,
-    paddingBottom: 24,
   },
-  timelineStopActive: {
+  pendingTitle: {
     ...Typography.cardTitle,
     color: Colors.text.primary,
+    marginBottom: 4,
   },
-  timelineStopUpcoming: {
-    ...Typography.cardTitle,
+  pendingDesc: {
+    ...Typography.body,
     color: Colors.text.secondary,
+    marginBottom: 2,
   },
-  timelineTime: {
+  pendingTime: {
+    ...Typography.caption,
+    color: Colors.text.light,
+  },
+  syncButton: {
+    backgroundColor: Colors.primary,
+  },
+
+  // ──── Utility Cards ────
+  utilityGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 20,
+    gap: 12,
+  },
+  utilityCard: {
+    width: (width - 52) / 2,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  utilityIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  utilityTitle: {
+    ...Typography.cardTitle,
+    color: Colors.text.primary,
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  utilityDesc: {
     ...Typography.caption,
     color: Colors.text.secondary,
-    marginTop: 4,
-  }
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  utilityStatus: {
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  utilityArrow: {
+    alignSelf: 'flex-start',
+  },
 });

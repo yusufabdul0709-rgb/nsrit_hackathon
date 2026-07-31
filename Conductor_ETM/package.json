@@ -1,15 +1,24 @@
 {
   "name": "conductor_etm",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "dependencies": {
+    "@expo/metro-runtime": "^57.0.8",
+    "@react-navigation/bottom-tabs": "*",
     "expo": "~57.0.9",
     "expo-camera": "~57.0.3",
+    "expo-constants": "*",
+    "expo-linking": "*",
+    "expo-router": "*",
     "expo-status-bar": "~57.0.1",
     "lucide-react-native": "^1.28.0",
     "react": "19.2.3",
+    "react-dom": "^19.2.3",
     "react-native": "0.86.2",
-    "react-native-svg": "15.15.4"
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "*",
+    "react-native-svg": "15.15.4",
+    "react-native-web": "^0.21.2"
   },
   "scripts": {
     "start": "expo start",
@@ -17,5 +26,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "@types/react": "~19.2.4",
+    "typescript": "~6.0.3"
+  }
 }

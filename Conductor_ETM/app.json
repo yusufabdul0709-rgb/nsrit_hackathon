@@ -4,8 +4,12 @@
     "slug": "Conductor_ETM",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "conductor-etm",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "plugins": [
+      "expo-router"
+    ],
     "ios": {
       "supportsTablet": true
     },

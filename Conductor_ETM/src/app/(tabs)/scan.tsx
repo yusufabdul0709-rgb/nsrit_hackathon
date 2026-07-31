@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Icon from '../../components/Icons';
@@ -14,10 +14,21 @@ const XIcon = Icon.X || Icon.XSquare;
 const ZapIcon = Icon.Zap || Icon.Flash;
 const QrCodeIcon = Icon.QrCode || Icon.ScanQrCode;
 
-export default function ScanScreen() {
+export default function ScanScreen({ onBack }: { onBack?: () => void }) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const router = useRouter();
+  let router: any = null;
+  try {
+    router = useRouter();
+  } catch (e) {}
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else if (router && router.back) {
+      try { router.back(); } catch (e) {}
+    }
+  };
 
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain) {
@@ -39,7 +50,7 @@ export default function ScanScreen() {
     return (
       <View style={styles.permissionContainer}>
         <Text style={styles.permissionText}>No access to camera</Text>
-        <Button title="Go Back" onPress={() => router.back()} />
+        <Button title="Go Back" onPress={() => handleBack()} />
       </View>
     );
   }
@@ -47,7 +58,7 @@ export default function ScanScreen() {
   return (
     <View style={styles.container}>
       <CameraView
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={scanned ? undefined : (Platform.OS === 'web' ? undefined : handleBarCodeScanned)}
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
@@ -58,7 +69,7 @@ export default function ScanScreen() {
       <SafeAreaView style={styles.overlay}>
         {/* Top Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.iconButton} onPress={() => handleBack()}>
             {XIcon && <XIcon color="#FFF" size={24} />}
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Scan Ticket</Text>

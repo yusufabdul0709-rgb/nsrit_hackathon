@@ -17,17 +17,18 @@ export function StatusChip({ label, status }: StatusChipProps) {
   };
 
   const bgMap = {
-    success: '#E7F9F0',
-    warning: '#FFF7E6',
-    danger: '#FEE2E2',
-    offline: '#FEF1E8',
+    success: Colors.status.successBg,
+    warning: Colors.status.warningBg,
+    danger: Colors.status.dangerBg,
+    offline: Colors.status.offlineBg,
   };
 
   const color = colorMap[status] || Colors.primary;
-  const backgroundColor = bgMap[status] || '#F0F4FF';
+  const backgroundColor = bgMap[status] || Colors.primaryLight;
 
   return (
     <View style={[styles.chip, { backgroundColor }]}>
+      <View style={[styles.dot, { backgroundColor: color }]} />
       <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   );
@@ -35,10 +36,18 @@ export function StatusChip({ label, status }: StatusChipProps) {
 
 const styles = StyleSheet.create({
   chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     alignSelf: 'flex-start',
+    gap: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   label: {
     ...Typography.caption,

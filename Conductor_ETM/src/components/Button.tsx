@@ -33,25 +33,31 @@ export function Button({ title, onPress, variant = 'primary', icon, style }: But
 
 const styles = StyleSheet.create({
   button: {
-    height: 48,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    gap: 8,
+    paddingHorizontal: 24,
+    gap: 10,
   },
   primaryButton: {
     backgroundColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
   },
   outlineButton: {
     backgroundColor: 'transparent',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: Colors.primary,
   },
   text: {
     ...Typography.body,
     fontWeight: '600',
+    fontSize: 15,
   },
   primaryText: {
     color: '#FFFFFF',
