@@ -101,6 +101,18 @@ export default function TabLayout() {
           href: null,
         }}
       />
+      <Tabs.Screen
+        name="qr-generate"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="nfc-pay"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

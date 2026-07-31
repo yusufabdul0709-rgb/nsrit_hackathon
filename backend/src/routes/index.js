@@ -20,7 +20,7 @@ router.use('/admin', adminRoutes);
 router.use('/ai', aiRoutes);
 router.use('/auth', authRoutes);
 router.use('/buses', busRoutes);
-router.use('/bus', busRoutes);
+router.use('/bus', busRoutes); // kept alias
 router.use('/conductor', conductorRoutes);
 router.use('/fare', fareRoutes);
 router.use('/location', locationRoutes);
@@ -28,9 +28,15 @@ router.use('/notifications', notificationRoutes);
 router.use('/payment', paymentRoutes);
 router.use('/qr', qrRoutes);
 router.use('/routes', routeRoutes);
-router.use('/ticket', ticketRoutes);
+router.use('/ticket', ticketRoutes); // kept alias
 router.use('/tickets', ticketRoutes);
+router.use('/ticket_v2', require('./ticket_v2.routes')); // from HEAD
+router.use('/training', require('./training.routes')); // from HEAD
 router.use('/trips', tripRoutes);
 router.use('/wallet', walletRoutes);
+
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 module.exports = router;

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const fareController = require('../controllers/fare.controller');
+const FareController = require('../fare/FareController');
 
-router.post('/calculate', fareController.calculateFare);
+router.post('/calculate', FareController.calculateFare);
 
 module.exports = router;

@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const paymentController = require('../controllers/payment.controller');
+const PaymentController = require('../payment/PaymentController');
+const paymentControllerV2 = require('../controllers/payment.controller');
 
-router.post('/initiate', paymentController.initiatePayment);
-router.post('/verify', paymentController.verifyPayment);
-router.post('/offline', paymentController.recordOfflinePayment);
-router.post('/sync', paymentController.syncOfflineQueue);
+router.post('/generateQR', PaymentController.generateQR);
+router.post('/initiate', paymentControllerV2.initiatePayment);
+router.post('/verify', paymentControllerV2.verifyPayment);
+router.post('/offline', paymentControllerV2.recordOfflinePayment);
+router.post('/sync', paymentControllerV2.syncOfflineQueue);
 
 module.exports = router;

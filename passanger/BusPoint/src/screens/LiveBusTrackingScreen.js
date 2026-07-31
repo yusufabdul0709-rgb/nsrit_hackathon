@@ -71,6 +71,7 @@ export default function LiveBusTrackingScreen({ navigation }) {
           speed: data.speed,
           currentStop: data.currentStop,
           nextStop: data.nextStop,
+          progressPercent: data.progressPercent,
         }));
       }
     });
@@ -94,50 +95,11 @@ export default function LiveBusTrackingScreen({ navigation }) {
   <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0A0E1A; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    
-    .bus-marker {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, #3B82F6, #2563EB);
-      border-radius: 50%;
-      border: 3px solid #fff;
-      box-shadow: 0 0 20px rgba(59,130,246,0.6), 0 4px 12px rgba(0,0,0,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      transition: transform 0.5s ease;
-      cursor: pointer;
-    }
-    
-    .bus-pulse {
-      position: absolute; width: 44px; height: 44px;
-      border-radius: 50%;
-      background: rgba(59,130,246,0.3);
-      animation: pulse 2s ease-out infinite;
-    }
-    
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.6; }
-      100% { transform: scale(2.5); opacity: 0; }
-    }
-    
-    .stop-marker {
-      width: 16px; height: 16px;
-      background: #1C2137;
-      border-radius: 50%;
-      border: 3px solid #38BDF8;
-      box-shadow: 0 0 8px rgba(56,189,248,0.4);
-      cursor: pointer;
-    }
-    
-    .stop-marker.passed { border-color: #34D399; background: #065F46; }
-    .stop-marker.current { 
-      border-color: #FBBF24; background: #92400E;
-      width: 20px; height: 20px;
-      box-shadow: 0 0 12px rgba(251,191,36,0.6);
-    }
     
     .mapboxgl-popup-content {
       background: #141825 !important;
@@ -181,57 +143,85 @@ export default function LiveBusTrackingScreen({ navigation }) {
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right');
 
-    // Bus marker element
-    const busContainer = document.createElement('div');
-    busContainer.style.position = 'relative';
+    let routeGeoJSON = null;
+    let routeLength = 0;
     
-    const busPulse = document.createElement('div');
-    busPulse.className = 'bus-pulse';
-    busContainer.appendChild(busPulse);
-    
-    const busEl = document.createElement('div');
-    busEl.className = 'bus-marker';
-    busEl.innerHTML = '🚌';
-    busContainer.appendChild(busEl);
+    let currentProgress = null;
+    let targetProgress = null;
+    let lastTimestamp = 0;
+    let isUserInteracting = false;
+    let autoFollowTimeout = null;
 
-    const busMarker = new mapboxgl.Marker({ element: busContainer, anchor: 'center' })
-      .setLngLat(coords[0])
-      .setPopup(new mapboxgl.Popup({ offset: 30 }).setHTML(
-        '<div class="popup-title">🚌 AP 31 TB 4567</div>' +
-        '<div class="popup-sub">Visakhapatnam → Anakapalle</div>' +
-        '<span class="popup-badge badge-live">● LIVE</span>'
-      ))
-      .addTo(map);
+    map.on('load', async () => {
+      // Load Top-Down Bus Avatar
+      const img = new Image();
+      img.onload = () => map.addImage('bus-icon', img);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 54"><rect x="2" y="2" width="20" height="50" rx="4" fill="#3B82F6" stroke="#ffffff" stroke-width="2"/><rect x="4" y="8" width="16" height="10" rx="1" fill="#0A0E1A"/><rect x="4" y="22" width="16" height="24" rx="1" fill="#0A0E1A"/></svg>`);
+      // Fetch actual highway route using Mapbox Directions API
+      const coordsString = coords.map(c => c[0] + ',' + c[1]).join(';');
+      const directionsUrl = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + coordsString + '?geometries=geojson&access_token=' + mapboxgl.accessToken;
+      
+      try {
+        const response = await fetch(directionsUrl);
+        const data = await response.json();
+        
+        if (data.routes && data.routes.length > 0) {
+          routeGeoJSON = data.routes[0].geometry;
+          routeLength = turf.length(routeGeoJSON);
+          
+          // Completed route (will be updated)
+          map.addSource('route-completed', {
+            type: 'geojson',
+            data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [coords[0]] } }
+          });
+          map.addLayer({
+            id: 'route-completed', type: 'line', source: 'route-completed',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#34D399', 'line-width': 5, 'line-opacity': 0.9 }
+          });
 
-    map.on('load', () => {
-      // Completed route (will be updated)
-      map.addSource('route-completed', {
-        type: 'geojson',
-        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [coords[0]] } }
-      });
-      map.addLayer({
-        id: 'route-completed', type: 'line', source: 'route-completed',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#34D399', 'line-width': 5, 'line-opacity': 0.9 }
-      });
+          // Remaining route (full true route initially)
+          map.addSource('route-remaining', {
+            type: 'geojson',
+            data: { type: 'Feature', properties: {}, geometry: routeGeoJSON }
+          });
+          map.addLayer({
+            id: 'route-remaining', type: 'line', source: 'route-remaining',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#3B82F6', 'line-width': 5, 'line-opacity': 0.6 }
+          });
 
-      // Remaining route
-      map.addSource('route-remaining', {
-        type: 'geojson',
-        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } }
-      });
-      map.addLayer({
-        id: 'route-remaining', type: 'line', source: 'route-remaining',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#3B82F6', 'line-width': 5, 'line-opacity': 0.6, 'line-dasharray': [2, 2] }
-      });
+          // Route glow effect
+          map.addLayer({
+            id: 'route-glow', type: 'line', source: 'route-remaining',
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: { 'line-color': '#3B82F6', 'line-width': 14, 'line-opacity': 0.15 }
+          }, 'route-remaining');
 
-      // Route glow effect
-      map.addLayer({
-        id: 'route-glow', type: 'line', source: 'route-remaining',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#3B82F6', 'line-width': 14, 'line-opacity': 0.15 }
-      }, 'route-remaining');
+          // Add Dynamic Bus Layer on top of everything
+          map.addSource('bus-source', {
+            type: 'geojson',
+            data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] }, properties: { bearing: 0 } }
+          });
+          map.addLayer({
+            id: 'bus-layer',
+            type: 'symbol',
+            source: 'bus-source',
+            layout: {
+              'icon-image': 'bus-icon',
+              'icon-size': ['interpolate', ['linear'], ['zoom'], 10, 0.4, 15, 0.8, 20, 1.5],
+              'icon-rotate': ['get', 'bearing'],
+              'icon-allow-overlap': true,
+              'icon-ignore-placement': true
+            }
+          });
+          
+          // Start Animation Loop
+          requestAnimationFrame(animateBus);
+        }
+      } catch(err) {
+        console.error("Failed to fetch directions", err);
+      }
 
       // Stop markers
       stops.forEach((stop, i) => {
@@ -250,48 +240,84 @@ export default function LiveBusTrackingScreen({ navigation }) {
       });
     });
 
-    // Track whether user has manually moved the map
-    let isUserInteracting = false;
-    let autoFollowTimeout = null;
-    
     map.on('dragstart', () => { isUserInteracting = true; });
     map.on('dragend', () => {
       clearTimeout(autoFollowTimeout);
-      autoFollowTimeout = setTimeout(() => { isUserInteracting = false; }, 8000);
+      autoFollowTimeout = setTimeout(() => { isUserInteracting = false; }, 5000);
     });
+
+    // 60FPS Smooth Animation Function
+    function animateBus(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const deltaTime = timestamp - lastTimestamp;
+      lastTimestamp = timestamp;
+
+      if (currentProgress !== null && targetProgress !== null && routeGeoJSON && routeLength > 0) {
+        // Interpolate progress towards target
+        const diff = targetProgress - currentProgress;
+        currentProgress += diff * (deltaTime / 2000); 
+        
+        if (Math.abs(targetProgress - currentProgress) < 0.001) {
+          currentProgress = targetProgress;
+        }
+
+        const along = turf.along(routeGeoJSON, (currentProgress / 100) * routeLength);
+        const newPos = along.geometry.coordinates;
+        
+        const source = map.getSource('bus-source');
+        if (source) {
+          // Calculate true highway bearing using a small look-ahead point
+          const lookAhead = turf.along(routeGeoJSON, Math.min(routeLength, ((currentProgress / 100) * routeLength) + 0.05));
+          const bearing = turf.bearing(along, lookAhead);
+
+          source.setData({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: newPos },
+            properties: { bearing: bearing }
+          });
+          
+          if (map.getSource('route-completed')) {
+             const sliced = turf.lineSlice(turf.point(routeGeoJSON.coordinates[0]), turf.point(newPos), routeGeoJSON);
+             map.getSource('route-completed').setData(sliced);
+          }
+          
+          if (!isUserInteracting) {
+            map.easeTo({ center: newPos, duration: 0, essential: true });
+          }
+        }
+      }
+      requestAnimationFrame(animateBus);
+    }
 
     // Listen for bus position updates from React Native
     document.addEventListener('message', function(event) {
       try {
         const data = JSON.parse(event.data);
-        if (data.type === 'updateBus') {
-          const newPos = [data.lng, data.lat];
-          busMarker.setLngLat(newPos);
-          
-          // Rotate bus icon with heading
-          if (data.heading) {
-            busEl.style.transform = 'rotate(' + data.heading + 'deg)';
+        if (data.type === 'updateBus' && data.progressPercent !== undefined) {
+          if (currentProgress === null) {
+            currentProgress = data.progressPercent;
           }
+          targetProgress = data.progressPercent;
           
-          // Update completed route line
-          const completedCoords = coords.filter(c => {
-            return c[0] >= Math.min(coords[0][0], newPos[0]) || c[1] >= Math.min(coords[0][1], newPos[1]);
-          }).filter(c => c[0] <= newPos[0] + 0.01);
-          
-          if (map.getSource('route-completed')) {
-            const done = [];
-            for (const c of coords) {
-              done.push(c);
-              if (Math.abs(c[0] - newPos[0]) < 0.02 && Math.abs(c[1] - newPos[1]) < 0.02) break;
+          // Update stop markers appearance based on overall progress
+          const stopEls = document.querySelectorAll('.stop-marker');
+          stopEls.forEach((el, i) => {
+            el.className = 'stop-marker';
+            // Approximation: assume stops are somewhat evenly distributed or check nearest stop
+            const stopProgress = (i / (stops.length - 1)) * 100;
+            if (Math.abs(stopProgress - data.progressPercent) < 5) {
+              el.classList.add('current');
+            } else if (stopProgress > data.progressPercent) {
+              // upcoming
+            } else {
+              el.classList.add('passed');
             }
-            done.push(newPos);
-            map.getSource('route-completed').setData({
-              type: 'Feature', properties: {},
-              geometry: { type: 'LineString', coordinates: done }
-            });
-          }
-
-          // Update stop markers appearance
+          });
+        }
+      } catch (err) {
+        console.error("Map message parsing error:", err);
+      }
+    });
           const stopEls = document.querySelectorAll('.stop-marker');
           stopEls.forEach((el, i) => {
             el.className = 'stop-marker';

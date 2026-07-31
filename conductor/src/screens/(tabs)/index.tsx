@@ -6,7 +6,7 @@ import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
-import { useRouter } from 'expo-router';
+
 import { conductorSocket } from '../../services/socketService';
 import { apiClient } from '../../services/apiClient';
 
@@ -24,11 +24,7 @@ const IndianRupeeIcon = Icon.IndianRupee;
 const UsersIcon = Icon.Users;
 const ArrowRightIcon = Icon.ArrowRight;
 
-export default function DashboardScreen() {
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
+export default function DashboardScreen({ onNavigate }: { onNavigate?: (screen: string) => void }) {
 
   // Dynamic Metrics starting from zero (0)
   const [totalCollection, setTotalCollection] = useState(0);
@@ -74,8 +70,9 @@ export default function DashboardScreen() {
   };
 
   const navigateTo = (path: string) => {
-    if (router?.push) {
-      router.push(path);
+    if (onNavigate) {
+      const dest = path.startsWith('/') ? path.substring(1) : path;
+      onNavigate(dest);
     }
   };
 
@@ -255,25 +252,23 @@ export default function DashboardScreen() {
           </Card>
         </View>
 
-        {/* Pending Sync Alert Card */}
-        {pendingSyncCount > 0 && (
-          <Card style={styles.pendingCard}>
-            <View style={styles.pendingHeader}>
-              <View style={styles.pendingIconCircle}>
-                {RefreshCwIcon && <RefreshCwIcon color={Colors.status.warning} size={24} />}
-              </View>
-              <View style={styles.pendingInfo}>
-                <Text style={styles.pendingTitle}>{pendingSyncCount} Offline Transactions Pending</Text>
-                <Text style={styles.pendingDesc}>Saved locally in SQLite queue while offline.</Text>
-              </View>
+        {/* Pending Members Card */}
+        <Card style={styles.pendingCard}>
+          <View style={styles.pendingHeader}>
+            <View style={styles.pendingIconCircle}>
+              {RefreshCwIcon && <RefreshCwIcon color={Colors.status.warning} size={24} />}
             </View>
-            <Button
-              title="Sync Now with Server"
-              style={styles.syncButton}
-              onPress={() => navigateTo('/pending')}
-            />
-          </Card>
-        )}
+            <View style={styles.pendingInfo}>
+              <Text style={styles.pendingTitle}>Pending Members</Text>
+              <Text style={styles.pendingDesc}>Passengers waiting for offline payment settlement.</Text>
+            </View>
+          </View>
+          <Button
+            title="View Members"
+            style={styles.syncButton}
+            onPress={() => navigateTo('/pending')}
+          />
+        </Card>
 
       </ScrollView>
     </SafeAreaView>

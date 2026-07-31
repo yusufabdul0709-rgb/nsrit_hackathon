@@ -5,6 +5,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Icon from '../../components/Icons';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
+
 import { useRouter } from 'expo-router';
 import { Button } from '../../components/Button';
 import { conductorSocket } from '../../services/socketService';
