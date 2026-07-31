@@ -3,49 +3,42 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../constants/Colors';
 import { Typography } from '../constants/Typography';
 
-type StatusType = 'success' | 'warning' | 'danger' | 'offline' | 'default';
-
 interface StatusChipProps {
   label: string;
-  status?: StatusType;
+  status: 'success' | 'warning' | 'danger' | 'offline';
 }
 
-export function StatusChip({ label, status = 'default' }: StatusChipProps) {
-  
-  const getColors = () => {
-    switch (status) {
-      case 'success':
-        return { bg: '#E7F9F0', text: Colors.status.success };
-      case 'warning':
-        return { bg: '#FFF7E6', text: Colors.status.warning };
-      case 'danger':
-        return { bg: '#FDECEB', text: Colors.status.danger };
-      case 'offline':
-        return { bg: '#FEF1E8', text: Colors.status.offline };
-      default:
-        return { bg: Colors.border, text: Colors.text.secondary };
-    }
+export function StatusChip({ label, status }: StatusChipProps) {
+  const colorMap = {
+    success: Colors.status.success,
+    warning: Colors.status.warning,
+    danger: Colors.status.danger,
+    offline: Colors.status.offline,
   };
 
-  const { bg, text } = getColors();
+  const bgMap = {
+    success: '#E7F9F0',
+    warning: '#FFF7E6',
+    danger: '#FEE2E2',
+    offline: '#FEF1E8',
+  };
+
+  const color = colorMap[status] || Colors.primary;
+  const backgroundColor = bgMap[status] || '#F0F4FF';
 
   return (
-    <View style={[styles.container, { backgroundColor: bg }]}>
-      {/* Optional dot indicator could go here */}
-      <Text style={[styles.label, { color: text }]}>{label}</Text>
+    <View style={[styles.chip, { backgroundColor }]}>
+      <Text style={[styles.label, { color }]}>{label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999, // Pill shape
+  chip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
     alignSelf: 'flex-start',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   label: {
     ...Typography.caption,

@@ -1,39 +1,28 @@
-import { Platform } from 'react-native';
+import { TextStyle } from 'react-native';
 
-const fontFamily = Platform.select({
-  ios: 'System',
-  android: 'sans-serif',
-  default: 'sans-serif',
-});
-
-export const Typography = {
+export const Typography: {
+  heading: TextStyle;
+  section: TextStyle;
+  cardTitle: TextStyle;
+  body: TextStyle;
+  caption: TextStyle;
+} = {
   heading: {
-    fontFamily,
-    fontSize: 32,
-    fontWeight: 'bold' as const,
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   section: {
-    fontFamily,
-    fontSize: 22,
-    fontWeight: '600' as const,
+    fontSize: 18,
+    fontWeight: '600',
   },
   cardTitle: {
-    fontFamily,
-    fontSize: 18,
-    fontWeight: '500' as const,
+    fontSize: 16,
+    fontWeight: '600',
   },
   body: {
-    fontFamily,
-    fontSize: 16,
-    fontWeight: '400' as const,
+    fontSize: 14,
   },
   caption: {
-    fontFamily,
-    fontSize: 14,
-    fontWeight: '400' as const,
+    fontSize: 12,
   },
-  numbers: {
-    fontFamily,
-    fontWeight: 'bold' as const,
-  }
 };
