@@ -1,13 +1,11 @@
 {
   "expo": {
-    "name": "Conductor_ETM",
-    "slug": "Conductor_ETM",
+    "name": "conductor",
+    "slug": "conductor",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "conductor-etm",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "plugins": [],
     "ios": {
       "supportsTablet": true
     },
@@ -21,6 +19,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": []
   }
 }
