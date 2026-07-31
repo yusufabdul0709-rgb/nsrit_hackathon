@@ -1,1 +1,0 @@
-# nsrit_hackathon

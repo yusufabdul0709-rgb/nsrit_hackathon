@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BusOne - Smart Digital Bus Ticketing Admin Dashboard</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Dashboard Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Socket.IO & Leaflet Scripts -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="header">
+    <div class="logo-container">
+      <div class="logo-icon">🚌</div>
+      <div>
+        <h1 class="logo-title">BusOne Admin</h1>
+        <p class="logo-subtitle">Real-Time Transit & Revenue Command Center</p>
+      </div>
+    </div>
+    
+    <div class="header-right">
+      <div class="status-badge" id="systemStatus">
+        <span class="status-dot green"></span>
+        <span id="statusText">System Live & Connected</span>
+      </div>
+      <button class="btn btn-primary" onclick="syncOfflineTransactions()">
+        ⚡ Sync Offline Queue (<span id="syncQueueBadge">0</span>)
+      </button>
+    </div>
+  </header>
+
+  <main class="main-container">
+    
+    <!-- Top Metrics Grid (Starts dynamically from 0) -->
+    <div class="metrics-grid">
+      
+      <div class="card metric-card">
+        <div class="metric-icon green-glow">₹</div>
+        <div class="metric-info">
+          <span class="metric-label">Today's Revenue</span>
+          <h2 class="metric-value" id="todaysRevenue">₹0</h2>
+          <span class="metric-sub" id="revenueSub">Starting from ₹0</span>
+        </div>
+      </div>
+
+      <div class="card metric-card">
+        <div class="metric-icon blue-glow">🚌</div>
+        <div class="metric-info">
+          <span class="metric-label">Active Buses</span>
+          <h2 class="metric-value" id="activeBuses">0</h2>
+          <span class="metric-sub" id="tripsSub">0 Total Trips Today</span>
+        </div>
+      </div>
+
+      <div class="card metric-card">
+        <div class="metric-icon purple-glow">👥</div>
+        <div class="metric-info">
+          <span class="metric-label">Passengers Served</span>
+          <h2 class="metric-value" id="totalPassengers">0</h2>
+          <span class="metric-sub">Across all routes</span>
+        </div>
+      </div>
+
+      <div class="card metric-card">
+        <div class="metric-icon orange-glow">👨‍✈️</div>
+        <div class="metric-info">
+          <span class="metric-label">Online Conductors</span>
+          <h2 class="metric-value" id="onlineConductors">0</h2>
+          <span class="metric-sub" id="offlineConductorsSub">0 Offline</span>
+        </div>
+      </div>
+
+      <div class="card metric-card">
+        <div class="metric-icon red-glow">⏳</div>
+        <div class="metric-info">
+          <span class="metric-label">Pending Sync Queue</span>
+          <h2 class="metric-value" id="pendingSyncCount">0</h2>
+          <span class="metric-sub">Offline transactions</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Main Grid: Live Map & Active Trip Table -->
+    <div class="dashboard-grid">
+      
+      <!-- Live GPS Map Container -->
+      <div class="card map-card">
+        <div class="card-header">
+          <h3 class="card-title">📍 Live GPS Bus Tracking Map</h3>
+          <span class="badge badge-live">LIVE SOCKET FEED</span>
+        </div>
+        <div id="map" class="map-container"></div>
+      </div>
+
+      <!-- Active Trips Monitor -->
+      <div class="card table-card">
+        <div class="card-header">
+          <h3 class="card-title">🚌 Active Trip Sessions</h3>
+          <button class="btn btn-sm btn-secondary" onclick="loadDashboardData()">Refresh Data</button>
+        </div>
+        
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Bus #</th>
+                <th>Route</th>
+                <th>Current Stop</th>
+                <th>Collection</th>
+                <th>Passengers</th>
+                <th>Pending Sync</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="activeTripsTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">No active trips currently. Waiting for Conductor to start session.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Bottom Row: Recent Tickets & Pending Sync Log -->
+    <div class="dashboard-grid bottom-grid">
+      
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">🎟️ Real-Time Ticket Transactions</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Ticket ID</th>
+                <th>Trip ID</th>
+                <th>Stop Trajectory</th>
+                <th>Fare</th>
+                <th>Payment Mode</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">No ticket transactions issued yet. Start scanning QR to generate tickets.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title">🔄 Offline Sync Queue Monitor</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Local ID</th>
+                <th>Trip ID</th>
+                <th>Passenger</th>
+                <th>Fare</th>
+                <th>Sync Status</th>
+              </tr>
+            </thead>
+            <tbody id="syncTableBody">
+              <tr>
+                <td colspan="5" class="empty-state">Offline queue clean. All transactions synced.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Dashboard JavaScript File -->
+  <script src="app.js"></script>
+</body>
+</html>

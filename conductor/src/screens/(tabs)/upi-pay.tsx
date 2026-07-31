@@ -4,20 +4,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
-import { useRouter } from 'expo-router';
+
 
 const ArrowLeftIcon = Icon.ArrowLeft;
 const CheckCircleIcon = Icon.CheckCircle;
 
 export default function UpiPayScreen({ onBack }: { onBack?: () => void }) {
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
 
   const handleBack = () => {
     if (onBack) onBack();
-    else if (router?.back) router.back();
+
   };
 
   return (

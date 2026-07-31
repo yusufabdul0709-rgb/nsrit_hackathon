@@ -136,6 +136,10 @@ function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="BookingScreen" component={BookingScreen} />
+      <Stack.Screen name="ConfirmBookingScreen" component={ConfirmBookingScreen} />
+      <Stack.Screen name="TicketQRScreen" component={TicketQRScreen} />
+      <Stack.Screen name="LiveBusTrackingScreen" component={LiveBusTrackingScreen} />
       <Stack.Screen name="Journey" component={BookingScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />
       <Stack.Screen name="LiveTracking" component={LiveBusTrackingScreen} />
