@@ -1,14 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { 
-  StyleSheet, 
   Text, 
   View, 
   TouchableOpacity, 
   Animated, 
   Platform,
   StatusBar,
-  Dimensions,
-  Button
+  Dimensions
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -16,7 +14,6 @@ import {
   ArrowLeft, 
   Flashlight, 
   HelpCircle, 
-  Wifi, 
   WifiOff, 
   Image as ImageIcon, 
   Keyboard, 
@@ -25,23 +22,9 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react-native';
+import tw from 'twrnc';
 
 const { width } = Dimensions.get('window');
-
-const COLORS = {
-  primary: '#004CFF',
-  secondary: '#3F74F9',
-  background: '#F6F8FC',
-  surface: '#FFFFFF',
-  cardBorder: '#E8EEF9',
-  primaryText: '#0F172A',
-  secondaryText: '#64748B',
-  divider: '#E5E7EB',
-  success: '#16C47F',
-  warning: '#FFB020',
-  offlineOrange: '#F97316',
-  error: '#F04438',
-};
 
 export default function ScanQR({ onBack }) {
   const [permission, requestPermission] = useCameraPermissions();
@@ -49,11 +32,10 @@ export default function ScanQR({ onBack }) {
   const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Loop the scanning line animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(scanLineAnim, {
-          toValue: 240, // Height of the scanner area
+          toValue: 240,
           duration: 2000,
           useNativeDriver: true,
         }),
@@ -65,7 +47,6 @@ export default function ScanQR({ onBack }) {
       ])
     ).start();
 
-    // Toggle offline mode every 5 seconds for demonstration
     const interval = setInterval(() => {
       setIsOffline(prev => !prev);
     }, 5000);
@@ -73,98 +54,96 @@ export default function ScanQR({ onBack }) {
   }, [scanLineAnim]);
 
   const handleBarcodeScanned = ({ type, data }) => {
-    // Stop continuous scanning temporarily by setting a timeout or state
-    // For hackathon, just alert the scan result:
     alert(`Ticket Scanned Successfully!\nData: ${data}`);
   };
 
   if (!permission) {
-    return <View style={styles.container} />;
+    return <View style={tw`flex-1 bg-slate-50`} />;
   }
 
   if (!permission.granted) {
     return (
-      <View style={styles.permissionContainer}>
-        <Text style={styles.permissionText}>We need camera access to scan your BusPoint ticket.</Text>
-        <TouchableOpacity style={styles.quickBtn} onPress={requestPermission}>
-          <Text style={styles.quickBtnText}>Grant Camera Permission</Text>
+      <View style={tw`flex-1 bg-slate-50 justify-center items-center p-6`}>
+        <Text style={tw`text-base text-slate-800 text-center mb-8 leading-6`}>We need camera access to scan your BusPoint ticket.</Text>
+        <TouchableOpacity style={tw`bg-[#004CFF] py-3.5 px-6 rounded-2xl`} onPress={requestPermission}>
+          <Text style={tw`text-white font-semibold text-base`}>Grant Camera Permission</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={{ marginTop: 24 }} onPress={onBack}>
-          <Text style={{ color: COLORS.primary, fontWeight: '600' }}>← Go Back</Text>
+        <TouchableOpacity style={tw`mt-6`} onPress={onBack}>
+          <Text style={tw`text-[#004CFF] font-semibold`}>← Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+    <SafeAreaView style={tw`flex-1 bg-slate-50`}>
+      <StatusBar barStyle="dark-content" backgroundColor="#F6F8FC" />
       
       {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.iconBtn} onPress={onBack}>
-          <ArrowLeft color={COLORS.primaryText} size={24} />
+      <View style={tw`flex-row items-center justify-between px-5 ${Platform.OS === 'android' ? 'pt-10' : 'pt-5'} pb-4`}>
+        <TouchableOpacity style={tw`w-11 h-11 rounded-full bg-white justify-center items-center border border-slate-200`} onPress={onBack}>
+          <ArrowLeft color="#0F172A" size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Scan Ticket</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Flashlight color={COLORS.primaryText} size={24} />
+        <Text style={tw`text-xl font-bold text-slate-800`}>Scan Ticket</Text>
+        <View style={tw`flex-row`}>
+          <TouchableOpacity style={tw`w-11 h-11 rounded-full bg-white justify-center items-center border border-slate-200`}>
+            <Flashlight color="#0F172A" size={24} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.iconBtn, { marginLeft: 8 }]}>
-            <HelpCircle color={COLORS.primaryText} size={24} />
+          <TouchableOpacity style={tw`w-11 h-11 rounded-full bg-white justify-center items-center border border-slate-200 ml-2`}>
+            <HelpCircle color="#0F172A" size={24} />
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Main Scanner Area */}
-      <View style={styles.scannerContainer}>
-        <View style={styles.scannerFrame}>
+      <View style={tw`items-center justify-center py-10`}>
+        <View style={[tw`bg-blue-500/5 rounded-3xl border-2 border-blue-500/10 relative overflow-hidden`, { width: width * 0.7, height: width * 0.7 }]}>
           <CameraView 
-            style={StyleSheet.absoluteFill}
+            style={tw`absolute inset-0`}
             facing="back"
             onBarcodeScanned={handleBarcodeScanned}
           />
           {/* Corner brackets */}
-          <View style={[styles.corner, styles.topLeft]} />
-          <View style={[styles.corner, styles.topRight]} />
-          <View style={[styles.corner, styles.bottomLeft]} />
-          <View style={[styles.corner, styles.bottomRight]} />
+          <View style={tw`absolute top-0 left-0 w-10 h-10 border-t-4 border-l-4 border-[#004CFF] rounded-tl-3xl`} />
+          <View style={tw`absolute top-0 right-0 w-10 h-10 border-t-4 border-r-4 border-[#004CFF] rounded-tr-3xl`} />
+          <View style={tw`absolute bottom-0 left-0 w-10 h-10 border-b-4 border-l-4 border-[#004CFF] rounded-bl-3xl`} />
+          <View style={tw`absolute bottom-0 right-0 w-10 h-10 border-b-4 border-r-4 border-[#004CFF] rounded-br-3xl`} />
           
           {/* Animated Scanning Line */}
           <Animated.View 
             style={[
-              styles.scanLine, 
+              tw`w-full h-0.5 bg-[#004CFF] shadow-lg`, 
               { transform: [{ translateY: scanLineAnim }] }
             ]} 
           />
         </View>
-        <Text style={styles.instructionText}>
+        <Text style={tw`mt-6 text-sm font-medium text-slate-500`}>
           Scan the QR displayed by the conductor
         </Text>
       </View>
 
       {/* Dynamic Network Status Card */}
-      <View style={styles.statusContainer}>
+      <View style={tw`px-5 mb-6`}>
         {isOffline ? (
-          <View style={[styles.statusCard, styles.offlineCard]}>
-            <View style={styles.statusHeader}>
-              <WifiOff color={COLORS.offlineOrange} size={24} />
-              <View style={styles.offlineBadge}>
-                <Text style={styles.offlineBadgeText}>OFFLINE MODE</Text>
+          <View style={tw`bg-orange-500/5 border border-orange-500/20 rounded-3xl p-5`}>
+            <View style={tw`flex-row justify-between items-center mb-4`}>
+              <WifiOff color="#F97316" size={24} />
+              <View style={tw`bg-[#F97316] px-2.5 py-1.5 rounded-xl`}>
+                <Text style={tw`text-white text-[10px] font-bold tracking-wider`}>OFFLINE MODE</Text>
               </View>
             </View>
-            <Text style={styles.offlineTitle}>Offline Ticket Mode</Text>
-            <Text style={styles.offlineDesc}>
+            <Text style={tw`text-lg font-bold text-[#F97316] mb-2`}>Offline Ticket Mode</Text>
+            <Text style={tw`text-sm leading-5 text-slate-500 font-medium`}>
               Continue your journey. Payment will automatically sync once internet is available.
             </Text>
           </View>
         ) : (
-          <View style={styles.statusCard}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <CheckCircle2 color={COLORS.success} size={24} />
-              <View style={styles.onlineTextContainer}>
-                <Text style={styles.onlineTitle}>Internet Connected</Text>
-                <Text style={styles.onlineDesc}>Ready for ultra-fast UPI payments</Text>
+          <View style={tw`bg-white rounded-3xl p-5 border border-slate-200`}>
+            <View style={tw`flex-row items-center`}>
+              <CheckCircle2 color="#16C47F" size={24} />
+              <View style={tw`ml-3`}>
+                <Text style={tw`text-base font-bold text-slate-800 mb-1`}>Internet Connected</Text>
+                <Text style={tw`text-xs text-slate-500`}>Ready for ultra-fast UPI payments</Text>
               </View>
             </View>
           </View>
@@ -172,32 +151,32 @@ export default function ScanQR({ onBack }) {
       </View>
 
       {/* Quick Buttons */}
-      <View style={styles.quickButtonsRow}>
-        <TouchableOpacity style={styles.quickBtn}>
-          <ImageIcon color={COLORS.primary} size={20} />
-          <Text style={styles.quickBtnText}>Gallery</Text>
+      <View style={tw`flex-row px-5 gap-4 mb-8`}>
+        <TouchableOpacity style={tw`flex-1 flex-row items-center justify-center bg-white py-3.5 rounded-2xl border border-slate-200`}>
+          <ImageIcon color="#004CFF" size={20} />
+          <Text style={tw`text-sm font-semibold text-slate-800 ml-2`}>Gallery</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.quickBtn}>
-          <Keyboard color={COLORS.primary} size={20} />
-          <Text style={styles.quickBtnText}>Enter Code</Text>
+        <TouchableOpacity style={tw`flex-1 flex-row items-center justify-center bg-white py-3.5 rounded-2xl border border-slate-200`}>
+          <Keyboard color="#004CFF" size={20} />
+          <Text style={tw`text-sm font-semibold text-slate-800 ml-2`}>Enter Code</Text>
         </TouchableOpacity>
       </View>
 
       {/* Bottom Information */}
-      <View style={styles.supportedPayments}>
-        <Text style={styles.supportedLabel}>SUPPORTED PAYMENTS</Text>
-        <View style={styles.paymentChips}>
-          <View style={styles.chip}>
-            <CreditCard color={COLORS.secondaryText} size={16} />
-            <Text style={styles.chipText}>UPI</Text>
+      <View style={tw`px-5 items-center`}>
+        <Text style={tw`text-[11px] font-bold text-slate-500 tracking-wider mb-4`}>SUPPORTED PAYMENTS</Text>
+        <View style={tw`flex-row gap-3`}>
+          <View style={tw`flex-row items-center bg-white px-3 py-2 rounded-full border border-slate-200`}>
+            <CreditCard color="#64748B" size={16} />
+            <Text style={tw`text-xs font-semibold text-slate-500 ml-1.5`}>UPI</Text>
           </View>
-          <View style={styles.chip}>
-            <Wallet color={COLORS.secondaryText} size={16} />
-            <Text style={styles.chipText}>Wallet</Text>
+          <View style={tw`flex-row items-center bg-white px-3 py-2 rounded-full border border-slate-200`}>
+            <Wallet color="#64748B" size={16} />
+            <Text style={tw`text-xs font-semibold text-slate-500 ml-1.5`}>Wallet</Text>
           </View>
-          <View style={styles.chip}>
-            <AlertCircle color={COLORS.secondaryText} size={16} />
-            <Text style={styles.chipText}>BusPass</Text>
+          <View style={tw`flex-row items-center bg-white px-3 py-2 rounded-full border border-slate-200`}>
+            <AlertCircle color="#64748B" size={16} />
+            <Text style={tw`text-xs font-semibold text-slate-500 ml-1.5`}>BusPass</Text>
           </View>
         </View>
       </View>
@@ -205,235 +184,3 @@ export default function ScanQR({ onBack }) {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 40 : 20,
-    paddingBottom: 16,
-  },
-  iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: COLORS.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: COLORS.primaryText,
-  },
-  headerRight: {
-    flexDirection: 'row',
-  },
-  permissionContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  permissionText: {
-    fontSize: 16,
-    color: COLORS.primaryText,
-    textAlign: 'center',
-    marginBottom: 32,
-    lineHeight: 24,
-  },
-  
-  // Scanner Area
-  scannerContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  scannerFrame: {
-    width: width * 0.7,
-    height: width * 0.7,
-    backgroundColor: 'rgba(0, 76, 255, 0.03)',
-    borderRadius: 28,
-    borderWidth: 2,
-    borderColor: 'rgba(0, 76, 255, 0.1)',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  corner: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderColor: COLORS.primary,
-  },
-  topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderTopLeftRadius: 28,
-  },
-  topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderTopRightRadius: 28,
-  },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderBottomLeftRadius: 28,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderBottomRightRadius: 28,
-  },
-  scanLine: {
-    width: '100%',
-    height: 2,
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.8,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  instructionText: {
-    marginTop: 24,
-    fontSize: 15,
-    fontWeight: '500',
-    color: COLORS.secondaryText,
-  },
-
-  // Status Card
-  statusContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
-  statusCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 24,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  offlineCard: {
-    backgroundColor: 'rgba(249, 115, 22, 0.05)',
-    borderColor: 'rgba(249, 115, 22, 0.2)',
-  },
-  statusHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  offlineBadge: {
-    backgroundColor: COLORS.offlineOrange,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  offlineBadgeText: {
-    color: COLORS.surface,
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  offlineTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.offlineOrange,
-    marginBottom: 8,
-  },
-  offlineDesc: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: COLORS.secondaryText,
-    fontWeight: '500',
-  },
-  onlineTextContainer: {
-    marginLeft: 12,
-  },
-  onlineTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.primaryText,
-    marginBottom: 4,
-  },
-  onlineDesc: {
-    fontSize: 13,
-    color: COLORS.secondaryText,
-  },
-
-  // Quick Buttons
-  quickButtonsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 16,
-    marginBottom: 32,
-  },
-  quickBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surface,
-    paddingVertical: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  quickBtnText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: COLORS.primaryText,
-    marginLeft: 8,
-  },
-
-  // Supported Payments
-  supportedPayments: {
-    paddingHorizontal: 20,
-    alignItems: 'center',
-  },
-  supportedLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.secondaryText,
-    letterSpacing: 0.5,
-    marginBottom: 16,
-  },
-  paymentChips: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.cardBorder,
-  },
-  chipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.secondaryText,
-    marginLeft: 6,
-  }
-});
