@@ -49,7 +49,6 @@ import {
 } from 'lucide-react-native';
 
 export {
-  ArrowLeft,
   Radio,
   Radio as Nfc,
   Bell,
