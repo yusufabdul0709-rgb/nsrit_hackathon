@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity,
@@ -573,7 +573,7 @@ export default function LiveBusTrackingScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: DARK.bg },
-  
+
   // Loading
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingTitle: { color: DARK.text, fontSize: 18, fontWeight: '700', marginTop: 20 },
@@ -583,11 +583,11 @@ const styles = StyleSheet.create({
   // Map
   mapContainer: { flex: 1, position: 'relative' },
   mapWebView: { flex: 1, backgroundColor: DARK.bg },
-  mapLoading: { 
+  mapLoading: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: DARK.bg, justifyContent: 'center', alignItems: 'center' 
+    backgroundColor: DARK.bg, justifyContent: 'center', alignItems: 'center'
   },
-  
+
   // Map Overlays
   mapOverlayHeader: {
     position: 'absolute', top: Platform.OS === 'ios' ? 10 : 10,
@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, borderWidth: 1, borderColor: DARK.border,
   },
   connectionText: { fontSize: 10, fontWeight: '800', marginLeft: 6, letterSpacing: 1 },
-  
+
   speedOverlay: {
     position: 'absolute', bottom: 20, left: 16,
     backgroundColor: 'rgba(10,14,26,0.85)', paddingHorizontal: 16, paddingVertical: 10,
@@ -732,5 +732,3 @@ const styles = StyleSheet.create({
   },
   buyTicketText: { color: '#FFF', fontSize: 15, fontWeight: '700', marginLeft: 10 },
 });
-=======
->>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
