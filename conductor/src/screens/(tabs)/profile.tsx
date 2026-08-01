@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Icon from '../../components/Icons';
 import { Colors } from '../../constants/Colors';
@@ -24,6 +25,36 @@ const TicketIcon = Icon.Ticket;
 const SmartphoneIcon = Icon.Smartphone;
 
 export default function ProfileScreen({ onLogout }: { onLogout?: () => void }) {
+  const [conductorName, setConductorName] = useState('Loading...');
+  const [conductorId, setConductorId] = useState('...');
+  const [initials, setInitials] = useState('...');
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('userInfo');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setConductorName(user.name || 'Ramesh Kumar');
+          setConductorId(user.phone || '24568');
+          
+          if (user.name) {
+            const parts = user.name.split(' ');
+            if (parts.length > 1) {
+              setInitials(parts[0][0].toUpperCase() + parts[1][0].toUpperCase());
+            } else if (parts[0].length > 1) {
+              setInitials(parts[0].substring(0, 2).toUpperCase());
+            } else {
+              setInitials(parts[0].toUpperCase());
+            }
+          } else {
+            setInitials('RK');
+          }
+        }
+      } catch (e) {}
+    };
+    loadUser();
+  }, []);
 
   const handleLogout = () => {
     if (onLogout) {
@@ -46,11 +77,11 @@ export default function ProfileScreen({ onLogout }: { onLogout?: () => void }) {
         <Card style={styles.profileCard} padding={24}>
           <View style={styles.profileHeader}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>RK</Text>
+              <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileDetails}>
-              <Text style={styles.profileName}>Ramesh Kumar</Text>
-              <Text style={styles.profileId}>Conductor ID: 24568</Text>
+              <Text style={styles.profileName}>{conductorName}</Text>
+              <Text style={styles.profileId}>Conductor ID: {conductorId}</Text>
               <StatusChip label="On Duty" status="success" />
             </View>
           </View>

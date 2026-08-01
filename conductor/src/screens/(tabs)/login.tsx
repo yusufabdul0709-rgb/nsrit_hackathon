@@ -20,23 +20,35 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
     router = useRouter();
   } catch (e) {}
 
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
   const [conductorId, setConductorId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
-    if (!conductorId || !password) {
-      Alert.alert('Error', 'Please enter your conductor ID and password');
+  const handleAuth = async () => {
+    if (!conductorId || !password || (isSignUp && !name)) {
+      Alert.alert('Error', 'Please fill all fields');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await apiClient.post('/auth/login', {
-        username: conductorId,
-        password,
-        role: 'conductor',
-      });
+      let res;
+      if (isSignUp) {
+        res = await apiClient.post('/auth/register', {
+          name,
+          phone: conductorId,
+          password,
+          role: 'conductor',
+        });
+      } else {
+        res = await apiClient.post('/auth/login', {
+          username: conductorId,
+          password,
+          role: 'conductor',
+        });
+      }
 
       if (res.success && res.token) {
         await AsyncStorage.setItem('userToken', res.token);
@@ -44,7 +56,7 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
         if (onLogin) onLogin();
         if (router?.replace) router.replace('/');
       } else {
-        Alert.alert('Login Failed', res.message || 'Invalid conductor credentials');
+        Alert.alert(isSignUp ? 'Signup Failed' : 'Login Failed', res.message || 'Invalid conductor credentials');
       }
     } catch (err) {
       Alert.alert('Network Error', 'Failed to reach server. Please check backend connection.');
@@ -70,8 +82,25 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
           </View>
 
           <View style={styles.formContainer}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.instructionText}>Please log in with your conductor credentials.</Text>
+            <Text style={styles.welcomeText}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
+            <Text style={styles.instructionText}>{isSignUp ? 'Register as a new conductor.' : 'Please log in with your conductor credentials.'}</Text>
+
+            {isSignUp && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Name</Text>
+                <View style={styles.inputContainer}>
+                  {UserIcon && <UserIcon color={Colors.text.secondary} size={20} />}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter your name"
+                    placeholderTextColor={Colors.text.light}
+                    value={name}
+                    onChangeText={setName}
+                    autoCapitalize="words"
+                  />
+                </View>
+              </View>
+            )}
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>Conductor ID</Text>
@@ -103,19 +132,27 @@ export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.forgotBtn}>
-              <Text style={styles.forgotText}>Forgot Password?</Text>
-            </TouchableOpacity>
+            {!isSignUp && (
+              <TouchableOpacity style={styles.forgotBtn}>
+                <Text style={styles.forgotText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
 
-            <TouchableOpacity style={styles.loginBtn} activeOpacity={0.8} onPress={handleLogin} disabled={loading}>
+            <TouchableOpacity style={styles.loginBtn} activeOpacity={0.8} onPress={handleAuth} disabled={loading}>
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <>
-                  <Text style={styles.loginBtnText}>Secure Login</Text>
+                  <Text style={styles.loginBtnText}>{isSignUp ? 'Sign Up' : 'Secure Login'}</Text>
                   {ArrowRightIcon && <ArrowRightIcon color="#FFFFFF" size={18} />}
                 </>
               )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.toggleBtn} onPress={() => setIsSignUp(!isSignUp)}>
+              <Text style={styles.toggleText}>
+                {isSignUp ? 'Already have an account? Log in' : "Don't have an account? Sign up"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -249,5 +286,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     letterSpacing: 0.5,
+  },
+  toggleBtn: {
+    marginTop: 24,
+    alignItems: 'center',
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
 });

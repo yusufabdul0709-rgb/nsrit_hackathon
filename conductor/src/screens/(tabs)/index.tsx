@@ -6,6 +6,7 @@ import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
 import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { conductorSocket } from '../../services/socketService';
 import { apiClient } from '../../services/apiClient';
@@ -31,6 +32,8 @@ export default function DashboardScreen({ onNavigate }: { onNavigate?: (screen: 
   const [passengerCount, setPassengerCount] = useState(0);
   const [ticketsIssued, setTicketsIssued] = useState(0);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [conductorName, setConductorName] = useState('');
+  const [conductorId, setConductorId] = useState('');
 
   useEffect(() => {
     conductorSocket.connect();
@@ -54,6 +57,18 @@ export default function DashboardScreen({ onNavigate }: { onNavigate?: (screen: 
     conductorSocket.on('syncCompleted', () => {
       setPendingSyncCount(0);
     });
+
+    const loadUser = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem('userInfo');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setConductorName(user.name || 'Conductor');
+          setConductorId(user.phone || 'N/A');
+        }
+      } catch (e) {}
+    };
+    loadUser();
 
     fetchActiveTrip();
   }, []);
@@ -111,11 +126,11 @@ export default function DashboardScreen({ onNavigate }: { onNavigate?: (screen: 
           <View style={styles.greetingGradient}>
             <View style={styles.greetingContent}>
               <Text style={styles.greetingText}>Namaste 🙏</Text>
-              <Text style={styles.conductorName}>Venkateswarlu K.</Text>
+              <Text style={styles.conductorName}>{conductorName || 'Venkateswarlu K.'}</Text>
               
               <View style={styles.greetingMeta}>
                 <View style={styles.idChip}>
-                  <Text style={styles.idChipText}>ID: 24568</Text>
+                  <Text style={styles.idChipText}>ID: {conductorId || '24568'}</Text>
                 </View>
                 <View style={styles.idChip}>
                   <Text style={styles.idChipText}>Depot: VSP-1</Text>
