@@ -13,7 +13,7 @@ import BookingScreen from '../screens/BookingScreen';
 import WalletScreen from '../screens/WalletScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import ConfirmBookingScreen from '../screens/ConfirmBookingScreen';
-import ScanQR from '../../ScanQR';
+import ScanQR from '../screens/ScanQRScreen';
 
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
