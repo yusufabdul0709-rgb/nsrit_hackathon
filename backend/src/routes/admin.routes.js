@@ -18,6 +18,8 @@ router.post('/wallets/funds', adminController.manageWalletFunds);
 router.get('/offline-tokens', adminController.getOfflineTokens);
 
 router.get('/conductors', adminController.getConductors);
+router.get('/conductors/pending', adminController.getPendingConductors);
+router.patch('/conductors/:id/approve', adminController.approveConductor);
 
 router.get('/etm-devices', adminController.getEtmDevices);
 router.post('/etm-devices/:deviceId/lock', adminController.toggleEtmLock);

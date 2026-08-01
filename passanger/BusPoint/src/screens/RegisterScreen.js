@@ -12,8 +12,12 @@ export default function RegisterScreen({ navigation }) {
   const { login } = useContext(AuthContext);
 
   const handleRegister = async () => {
-    if (!phone || !password || !name) {
-      Alert.alert('Error', 'Please fill all fields');
+    const trimmedName = name?.trim() || '';
+    const trimmedPhone = phone?.trim() || '';
+    const trimmedPassword = password?.trim() || '';
+
+    if (!trimmedPhone || !trimmedPassword || !trimmedName) {
+      Alert.alert('Validation Error', `Please fill all fields. Name: ${trimmedName ? 'Yes' : 'No'}, Phone: ${trimmedPhone ? 'Yes' : 'No'}, Password: ${trimmedPassword ? 'Yes' : 'No'}`);
       return;
     }
     
@@ -22,7 +26,7 @@ export default function RegisterScreen({ navigation }) {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone, password })
+        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone, password: trimmedPassword })
       });
       
       const data = await response.json();
@@ -30,10 +34,10 @@ export default function RegisterScreen({ navigation }) {
       if (response.ok) {
         login(data.token, data.user);
       } else {
-        Alert.alert('Error', data.message || 'Registration failed');
+        Alert.alert('Registration Failed', data.message || 'Registration failed on server');
       }
     } catch (error) {
-      Alert.alert('Error', 'Network error. Make sure the backend is running.');
+      Alert.alert('Network Error', 'Network error. Make sure the backend is running.');
     } finally {
       setLoading(false);
     }
@@ -44,7 +48,11 @@ export default function RegisterScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={tw`flex-1 bg-slate-50`}
     >
-      <ScrollView contentContainerStyle={tw`flex-grow p-5 justify-center`} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={tw`flex-grow p-5 justify-center`} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={tw`mb-10 mt-5`}>
           <Text style={tw`text-3xl font-bold text-slate-800 mb-2.5`}>Create Account</Text>
           <Text style={tw`text-base text-slate-500`}>Join APSRTC Smart Bus today</Text>

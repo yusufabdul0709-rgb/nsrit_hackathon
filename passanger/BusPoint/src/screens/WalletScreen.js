@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
-import { Wallet, Plus, RefreshCw } from 'lucide-react-native';
+import { Wallet, Plus, RefreshCw, QrCode, WifiOff } from 'lucide-react-native';
 import { API_BASE_URL } from '../config/api';
+import { getWalletBalance } from '../services/database';
 import tw from 'twrnc';
 
 export default function WalletScreen() {
   const { userToken } = useContext(AuthContext);
   const [balance, setBalance] = useState(0);
+  const [offlineBalance, setOfflineBalance] = useState(0);
   const [loading, setLoading] = useState(true);
   const [topupModalVisible, setTopupModalVisible] = useState(false);
   const [amountToAdd, setAmountToAdd] = useState('');
@@ -22,8 +24,15 @@ export default function WalletScreen() {
       if (response.ok) {
         setBalance(data.balance);
       }
+      
+      // Fetch local offline wallet balance
+      const offBal = await getWalletBalance();
+      setOfflineBalance(offBal);
     } catch (error) {
       console.log('Error fetching balance:', error);
+      // Even if network fails, load offline balance
+      const offBal = await getWalletBalance();
+      setOfflineBalance(offBal);
     } finally {
       setLoading(false);
     }
@@ -93,6 +102,24 @@ export default function WalletScreen() {
         >
           <Plus color="#0D6EFD" size={20} />
           <Text style={tw`text-[#0D6EFD] text-base font-bold ml-2`}>Top Up Wallet</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={tw`bg-emerald-600 rounded-3xl p-6 shadow-lg shadow-emerald-500/30 mt-4`}>
+        <View style={tw`flex-row justify-between items-center mb-4`}>
+          <View style={tw`flex-row items-center`}>
+            <WifiOff color="#FFFFFF" size={24} />
+            <Text style={tw`text-white text-lg font-bold ml-2`}>Offline Wallet</Text>
+          </View>
+          <Text style={tw`text-white text-2xl font-bold`}>₹{offlineBalance.toFixed(2)}</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={tw`bg-white flex-row items-center justify-center py-3.5 rounded-2xl`}
+          onPress={() => navigation.navigate('ScanPayScreen')}
+        >
+          <QrCode color="#059669" size={20} />
+          <Text style={tw`text-[#059669] text-base font-bold ml-2`}>Scan to Pay Offline</Text>
         </TouchableOpacity>
       </View>
 

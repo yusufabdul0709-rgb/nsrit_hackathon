@@ -85,6 +85,35 @@ export default function App() {
     { id: 'C-24574', name: 'Nagarjuna P.', busNumber: 'AP 39 W 3456', dutyStatus: 'On Duty', shift: '22:00 – 06:00', shiftLabel: 'Night Shift', leaveStatus: 'Active', totalCollection: 2340, ticketsIssued: 47 }
   ]);
 
+  const [pendingConductors, setPendingConductors] = useState([]);
+  
+  const fetchPendingConductors = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/conductors/pending`);
+      const data = await res.json();
+      if (data.success) {
+        setPendingConductors(data.pending);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleApproveConductor = async (id) => {
+    try {
+      const res = await fetch(`${API_BASE}/conductors/${id}/approve`, { method: 'PATCH' });
+      const data = await res.json();
+      if (data.success) {
+        showToast('✅ Conductor approved successfully');
+        fetchPendingConductors(); // refresh list
+      } else {
+        showToast('❌ Failed to approve conductor');
+      }
+    } catch (e) {
+      showToast('❌ Error approving conductor');
+    }
+  };
+
   // ─── Security Events ───
   const [securityEvents, setSecurityEvents] = useState([
     { id: 'SEC-101', timestamp: '2026-08-01T03:45:00Z', eventType: 'FAILED_LOGIN', description: 'Failed admin login attempt – wrong password (3rd attempt)', source: 'Admin Portal', ipAddress: '49.207.12.98', severity: 'MEDIUM', status: 'LOGGED' },
@@ -142,11 +171,15 @@ export default function App() {
 
   // ─── Socket.IO ───
   useEffect(() => {
+    // Connect to WebSocket
     const socket = io(BACKEND_URL, {
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
     });
+    
+    // Initial fetches
+    fetchPendingConductors();
 
     socket.on('connect', () => setSocketConnected(true));
     socket.on('disconnect', () => setSocketConnected(false));
@@ -549,6 +582,37 @@ export default function App() {
                   <h3 className="text-3xl font-black text-slate-900 mt-1">{conductors.length}</h3>
                 </div>
               </div>
+
+              {/* Pending Approvals Table */}
+              {pendingConductors && pendingConductors.length > 0 && (
+                <div className="bg-white p-6 rounded-2xl border border-amber-300 shadow-sm mb-6 bg-amber-50">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center"><UserCheck className="w-5 h-5 mr-2 text-amber-600" />Pending Conductors for Approval</h3>
+                  <table className="w-full text-left text-xs bg-white rounded-lg overflow-hidden shadow-sm border border-slate-200">
+                    <thead className="bg-slate-100 text-slate-600 font-bold uppercase">
+                      <tr>
+                        <th className="p-3">Name</th>
+                        <th className="p-3">Phone</th>
+                        <th className="p-3">Role</th>
+                        <th className="p-3">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-medium">
+                      {pendingConductors.map(c => (
+                        <tr key={c._id || c.id} className="hover:bg-slate-50">
+                          <td className="p-3 font-bold text-slate-900">{c.name}</td>
+                          <td className="p-3 font-mono text-slate-600">{c.phone}</td>
+                          <td className="p-3"><span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase">{c.role}</span></td>
+                          <td className="p-3">
+                            <button onClick={() => handleApproveConductor(c._id || c.id)} className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-[11px] font-bold hover:bg-emerald-700 transition-colors shadow-sm">
+                              Approve
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
               {/* Table */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">

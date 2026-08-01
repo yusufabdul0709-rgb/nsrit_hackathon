@@ -1,79 +1,85 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
-import { useRouter } from 'expo-router';
+
+import { generatePaymentRequest, mockPassengerResponse, verifyPassengerToken } from '../../services/cryptoService';
+import { saveTransaction } from '../../services/database';
 
 const ArrowLeftIcon = Icon.ArrowLeft;
-const QrCodeIcon = Icon.QrCode;
 const CheckCircleIcon = Icon.CheckCircle;
 const ClockIcon = Icon.Clock;
-const WifiOffIcon = Icon.WifiOff;
+const ShieldCheckIcon = Icon.ShieldCheck;
 
-export default function QRGenerationScreen({ onBack }: { onBack?: () => void }) {
-  let router: any = null;
-  try {
-    router = useRouter();
-  } catch (e) {}
+export default function QRGenerationScreen({ onBack, details }: { onBack?: () => void, details?: any }) {
+  const [requestObj, setRequestObj] = useState<any>(null);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const [status, setStatus] = useState<'SHOWING_QR' | 'EXPIRED' | 'SUCCESS'>('SHOWING_QR');
 
   const handleBack = () => {
     if (onBack) onBack();
-    else if (router?.back) router.back();
   };
 
-  const [isGenerated, setIsGenerated] = useState(false);
-  const [countdown, setCountdown] = useState(300); // 5 minutes validity
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (details) {
+      const req = generatePaymentRequest({
+        amount: details.amount,
+        journey: details.journey,
+        passengerType: details.passengerType
+      });
+      setRequestObj(req);
+    }
+  }, [details]);
 
-  // Simulate QR generation
-  const handleGenerate = () => {
-    setIsGenerated(true);
-    setCountdown(300);
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
+  useEffect(() => {
+    if (status !== 'SHOWING_QR') return;
+    
+    if (timeLeft <= 0) {
+      setStatus('EXPIRED');
+      return;
+    }
+    
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, [timeLeft, status]);
+
+  const handleSimulatePassenger = async () => {
+    if (!requestObj) return;
+    
+    // Simulate passenger scanning and generating response token
+    const encryptedTokenBase64 = mockPassengerResponse(requestObj);
+    
+    // Conductor receives and verifies it
+    const result = verifyPassengerToken(encryptedTokenBase64, requestObj.requestId);
+    
+    if (result.success) {
+      // Save to SQLite
+      await saveTransaction({
+        transactionId: result.transactionId!,
+        requestId: requestObj.requestId,
+        walletReference: result.walletReference!,
+        amount: result.amount!,
+        journey: details?.journey || 'Unknown',
+        status: 'PENDING_SETTLEMENT',
+        createdAt: Date.now()
+      });
+      
+      setStatus('SUCCESS');
+    } else {
+      Alert.alert('Verification Failed', result.error);
+    }
   };
-
-  // Pulse animation for the QR frame
-  useEffect(() => {
-    if (isGenerated) {
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 1.03, duration: 1200, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-        ])
-      );
-      pulse.start();
-      return () => pulse.stop();
-    }
-  }, [isGenerated]);
-
-  // Countdown timer
-  useEffect(() => {
-    if (isGenerated && countdown > 0) {
-      const timer = setInterval(() => setCountdown((c) => c - 1), 1000);
-      return () => clearInterval(timer);
-    }
-  }, [isGenerated, countdown]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // Mock ticket data for the QR
-  const ticketData = {
-    ticketId: 'OFL-' + Date.now().toString(36).toUpperCase(),
-    route: 'Visakhapatnam → Anakapalle',
-    fare: '₹135.00',
-    passengers: 1,
-    timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -86,123 +92,76 @@ export default function QRGenerationScreen({ onBack }: { onBack?: () => void }) 
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Offline Badge */}
-        <View style={styles.offlineBadge}>
-          {WifiOffIcon && <WifiOffIcon color={Colors.status.warning} size={16} />}
-          <Text style={styles.offlineBadgeText}>Offline Mode</Text>
-        </View>
-
-        {!isGenerated ? (
-          /* Pre-generation state */
-          <View style={styles.preGenContainer}>
-            <View style={styles.bigIconCircle}>
-              {QrCodeIcon && <QrCodeIcon color={Colors.primary} size={56} />}
+      <ScrollView contentContainerStyle={styles.content}>
+        
+        {status === 'SHOWING_QR' && requestObj && (
+          <View style={styles.qrContainer}>
+            <View style={styles.secureHeaderRow}>
+              {ShieldCheckIcon && <ShieldCheckIcon color="#059669" size={20} />}
+              <Text style={styles.qrHeader}>Secure Payment Request</Text>
             </View>
-            <Text style={styles.preGenTitle}>Generate Offline QR Ticket</Text>
-            <Text style={styles.preGenDesc}>
-              Create a secure, encrypted QR code that the passenger can scan to validate their ticket. Works without internet.
+            
+            <Text style={styles.qrAmount}>₹{details?.amount || 0}</Text>
+            <Text style={styles.journeyText}>{details?.journey}</Text>
+            
+            <View style={styles.qrBox}>
+              <QRCode
+                value={JSON.stringify(requestObj)}
+                size={240}
+                color="black"
+                backgroundColor="white"
+              />
+            </View>
+            
+            <View style={styles.timerRow}>
+              {ClockIcon && <ClockIcon color={Colors.status.warning} size={20} />}
+              <Text style={styles.timerText}>Expires in: {formatTime(timeLeft)}</Text>
+            </View>
+            
+            <Text style={styles.instruction}>
+              Ask the passenger to scan this QR code with their APSRTC Wallet app to authorize the offline payment.
             </Text>
-
-            {/* Ticket Summary Card */}
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>TICKET SUMMARY</Text>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Route</Text>
-                <Text style={styles.summaryValue}>{ticketData.route}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Fare</Text>
-                <Text style={[styles.summaryValue, { color: Colors.primary, fontWeight: 'bold' }]}>{ticketData.fare}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Passengers</Text>
-                <Text style={styles.summaryValue}>{ticketData.passengers}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryKey}>Time</Text>
-                <Text style={styles.summaryValue}>{ticketData.timestamp}</Text>
-              </View>
-            </View>
-
-            <TouchableOpacity style={styles.generateBtn} onPress={handleGenerate} activeOpacity={0.8}>
-              {QrCodeIcon && <QrCodeIcon color="#FFFFFF" size={22} />}
-              <Text style={styles.generateBtnText}>Generate QR Code</Text>
+            
+            <View style={styles.divider} />
+            
+            {/* For Prototyping */}
+            <TouchableOpacity style={styles.simulateBtn} onPress={handleSimulatePassenger}>
+              <Text style={styles.simulateBtnText}>Test: Simulate Passenger Scan</Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          /* Post-generation state */
-          <Animated.View style={[styles.postGenContainer, { opacity: fadeAnim }]}>
-            {/* Amount */}
-            <View style={styles.amountContainer}>
-              <Text style={styles.amountLabel}>Ticket Fare</Text>
-              <Text style={styles.amountValue}>{ticketData.fare}</Text>
-            </View>
-
-            {/* QR Code Card */}
-            <Animated.View style={[styles.qrCard, { transform: [{ scale: pulseAnim }] }]}>
-              <View style={styles.qrFrame}>
-                {/* Mock QR Code grid */}
-                <View style={styles.qrMock}>
-                  <View style={styles.qrCornerTL} />
-                  <View style={styles.qrCornerTR} />
-                  <View style={styles.qrCornerBL} />
-                  {/* Center pattern */}
-                  <View style={styles.qrCenter}>
-                    {QrCodeIcon && <QrCodeIcon color={Colors.primary} size={28} />}
-                  </View>
-                  {/* Data dots */}
-                  {[...Array(6)].map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.qrDot,
-                        {
-                          top: 50 + Math.floor(i / 3) * 30,
-                          left: 70 + (i % 3) * 20,
-                        },
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <Text style={styles.ticketId}>{ticketData.ticketId}</Text>
-
-              {/* Timer */}
-              <View style={styles.timerContainer}>
-                {ClockIcon && <ClockIcon color={countdown > 60 ? Colors.status.success : Colors.status.danger} size={16} />}
-                <Text
-                  style={[
-                    styles.timerText,
-                    { color: countdown > 60 ? Colors.status.success : Colors.status.danger },
-                  ]}
-                >
-                  Valid for {formatTime(countdown)}
-                </Text>
-              </View>
-            </Animated.View>
-
-            {/* Instruction */}
-            <Text style={styles.qrInstruction}>
-              Ask the passenger to scan this QR code using the BusPoint app. The ticket will be validated offline and synced later.
-            </Text>
-
-            {/* Success info */}
-            <View style={styles.successBanner}>
-              {CheckCircleIcon && <CheckCircleIcon color={Colors.status.success} size={20} />}
-              <Text style={styles.successText}>QR generated & saved locally. Will sync when online.</Text>
-            </View>
-
-            {/* Regenerate */}
-            <TouchableOpacity style={styles.regenerateBtn} onPress={handleGenerate} activeOpacity={0.8}>
-              <Text style={styles.regenerateBtnText}>Generate New QR</Text>
-            </TouchableOpacity>
-          </Animated.View>
         )}
+
+        {status === 'EXPIRED' && (
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusIconCircle, { backgroundColor: '#FEE2E2' }]}>
+              {ClockIcon && <ClockIcon color="#EF4444" size={48} />}
+            </View>
+            <Text style={styles.statusTitle}>QR Expired</Text>
+            <Text style={styles.statusDesc}>
+              The secure offline payment request has timed out for security reasons. Please generate a new ticket.
+            </Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleBack}>
+              <Text style={styles.primaryBtnText}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {status === 'SUCCESS' && (
+          <View style={styles.statusContainer}>
+            <View style={[styles.statusIconCircle, { backgroundColor: '#D1FAE5' }]}>
+              {CheckCircleIcon && <CheckCircleIcon color="#059669" size={48} />}
+            </View>
+            <Text style={styles.statusTitle}>Offline Authorized</Text>
+            <Text style={styles.statusDesc}>
+              The passenger's cryptographic token was verified successfully. 
+              The transaction is safely stored in Pending Members and will sync when internet returns.
+            </Text>
+            <TouchableOpacity style={styles.primaryBtn} onPress={handleBack}>
+              <Text style={styles.primaryBtnText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
       </ScrollView>
     </SafeAreaView>
   );
@@ -235,275 +194,137 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
   },
   content: {
+    flexGrow: 1,
     padding: 20,
-    paddingBottom: 40,
-  },
-
-  /* Offline Badge */
-  offlineBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: Colors.status.warningBg,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 6,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: Colors.status.warning + '40',
-  },
-  offlineBadgeText: {
-    ...Typography.caption,
-    fontWeight: '600',
-    color: Colors.status.warning,
-  },
-
-  /* Pre-generation */
-  preGenContainer: {
-    alignItems: 'center',
-  },
-  bigIconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#E0E7FF',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 24,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
   },
-  preGenTitle: {
-    ...Typography.heading,
-    fontSize: 22,
-    color: Colors.text.primary,
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  preGenDesc: {
-    ...Typography.body,
-    color: Colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 28,
-    paddingHorizontal: 8,
-  },
-
-  /* Summary Card */
-  summaryCard: {
+  qrContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
-    width: '100%',
-    marginBottom: 28,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    padding: 24,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
-  summaryLabel: {
-    ...Typography.caption,
-    fontWeight: '700',
-    color: Colors.text.light,
-    letterSpacing: 1,
+  secureHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#D1FAE5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
     marginBottom: 16,
   },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
+  qrHeader: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#059669',
   },
-  summaryKey: {
-    ...Typography.body,
-    color: Colors.text.secondary,
-  },
-  summaryValue: {
-    ...Typography.body,
+  qrAmount: {
+    fontSize: 40,
+    fontWeight: 'bold',
     color: Colors.text.primary,
-    fontWeight: '600',
+    marginBottom: 4,
+  },
+  journeyText: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginBottom: 24,
+  },
+  qrBox: {
+    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 24,
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.status.warningBg,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  timerText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: Colors.status.warning,
+  },
+  instruction: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
   },
   divider: {
+    width: '100%',
     height: 1,
     backgroundColor: Colors.border,
-    marginVertical: 10,
+    marginBottom: 24,
   },
-
-  /* Generate Button */
-  generateBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    height: 56,
+  simulateBtn: {
     width: '100%',
-    flexDirection: 'row',
+    paddingVertical: 14,
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
   },
-  generateBtnText: {
+  simulateBtnText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
-
-  /* Post-generation */
-  postGenContainer: {
-    alignItems: 'center',
-  },
-  amountContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  amountLabel: {
-    ...Typography.caption,
-    fontSize: 14,
-    color: Colors.text.secondary,
-    marginBottom: 4,
-  },
-  amountValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: Colors.primary,
-  },
-
-  /* QR Card */
-  qrCard: {
+  statusContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 28,
+    borderRadius: 16,
+    padding: 32,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  statusIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 24,
-    width: '100%',
   },
-  qrFrame: {
-    width: 200,
-    height: 200,
-    borderWidth: 2,
-    borderColor: Colors.primary + '30',
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    padding: 12,
-    backgroundColor: '#FAFBFF',
-  },
-  qrMock: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#111827',
-    borderRadius: 8,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  qrCornerTL: { position: 'absolute', top: 8, left: 8, width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF' },
-  qrCornerTR: { position: 'absolute', top: 8, right: 8, width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF' },
-  qrCornerBL: { position: 'absolute', bottom: 8, left: 8, width: 36, height: 36, borderRadius: 4, backgroundColor: '#FFFFFF' },
-  qrCenter: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -20,
-    marginLeft: -20,
-    width: 40,
-    height: 40,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  qrDot: {
-    position: 'absolute',
-    width: 8,
-    height: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 2,
-  },
-  ticketId: {
-    ...Typography.caption,
-    fontWeight: '700',
-    color: Colors.text.light,
-    letterSpacing: 1.5,
+  statusTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.text.primary,
     marginBottom: 12,
   },
-
-  /* Timer */
-  timerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  timerText: {
-    ...Typography.caption,
-    fontWeight: '700',
-  },
-
-  qrInstruction: {
-    ...Typography.body,
-    textAlign: 'center',
-    color: Colors.text.secondary,
-    lineHeight: 22,
-    marginBottom: 20,
-    paddingHorizontal: 8,
-  },
-
-  /* Success Banner */
-  successBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.status.successBg,
-    borderRadius: 12,
-    padding: 16,
-    gap: 10,
-    width: '100%',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: Colors.status.success + '30',
-  },
-  successText: {
-    ...Typography.caption,
-    fontSize: 13,
-    color: Colors.status.success,
-    fontWeight: '600',
-    flex: 1,
-    lineHeight: 18,
-  },
-
-  /* Regenerate Button */
-  regenerateBtn: {
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 14,
-    height: 52,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  regenerateBtnText: {
+  statusDesc: {
     fontSize: 15,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 32,
+  },
+  primaryBtn: {
+    width: '100%',
+    paddingVertical: 14,
+    backgroundColor: Colors.primary,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  primaryBtnText: {
+    fontSize: 16,
     fontWeight: 'bold',
-    color: Colors.primary,
+    color: '#FFFFFF',
   },
 });

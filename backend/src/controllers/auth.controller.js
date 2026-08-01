@@ -38,11 +38,13 @@ exports.register = async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
+      const isConductor = role.toLowerCase() === 'conductor';
       const newUser = await User.create({
         name,
         phone: identifier,
         password: hashedPassword,
-        role: role.toLowerCase()
+        role: role.toLowerCase(),
+        isApproved: !isConductor
       });
 
       const token = jwt.sign(
@@ -55,7 +57,7 @@ exports.register = async (req, res) => {
 
       return res.status(201).json({
         success: true,
-        message: 'Account created successfully!',
+        message: isConductor ? 'Registration successful! Please wait for Admin approval.' : 'Account created successfully!',
         token,
         user: {
           id: newUser._id.toString(),
@@ -76,6 +78,7 @@ exports.register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    const isConductorMemory = role.toLowerCase() === 'conductor';
     const newUser = {
       id: `USER-${Date.now()}`,
       name,
@@ -83,6 +86,7 @@ exports.register = async (req, res) => {
       password: hashedPassword,
       role: role.toLowerCase(),
       walletBalance: 0,
+      isApproved: !isConductorMemory,
       createdAt: new Date().toISOString()
     };
     dbStore.users.push(newUser);
@@ -97,7 +101,7 @@ exports.register = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Account created successfully!',
+      message: isConductorMemory ? 'Registration successful! Please wait for Admin approval.' : 'Account created successfully!',
       token,
       user: {
         id: newUser.id,
@@ -129,6 +133,10 @@ exports.login = async (req, res) => {
 
       if (!user) {
         return res.status(401).json({ success: false, message: 'No account found with this phone number. Please sign up first.' });
+      }
+
+      if (user.role === 'conductor' && !user.isApproved) {
+        return res.status(403).json({ success: false, message: 'Your account is pending admin approval.' });
       }
 
       const isMatch = await bcrypt.compare(password, user.password);
@@ -163,6 +171,10 @@ exports.login = async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ success: false, message: 'No account found. Please sign up first.' });
+    }
+
+    if (user.role === 'conductor' && !user.isApproved) {
+      return res.status(403).json({ success: false, message: 'Your account is pending admin approval.' });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
