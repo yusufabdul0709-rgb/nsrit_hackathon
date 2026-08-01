@@ -49,8 +49,9 @@ export default function ScanQR({ onBack, navigation }) {
   const [scannedTrip, setScannedTrip] = useState(null);
   const [selectedPaymentMode, setSelectedPaymentMode] = useState('WALLET'); // 'WALLET' or 'RAZORPAY'
 
-  // Offline Payment Animation State
+  // 2-Stage Payment Animation State ('PROCESSING' | 'SUCCESS')
   const [processingAnimation, setProcessingAnimation] = useState(false);
+  const [paymentStage, setPaymentStage] = useState('PROCESSING');
   const [walletBalance, setWalletBalance] = useState(userData?.walletBalance || 0);
 
   // Razorpay Checkout Modal State
@@ -148,13 +149,13 @@ export default function ScanQR({ onBack, navigation }) {
     }
 
     setPaymentModalVisible(false);
+
+    // ─── STAGE 1: SHOW PAYMENT IN PROGRESS LOADING MODAL ───
+    setPaymentStage('PROCESSING');
+    checkScaleAnim.setValue(0);
     setProcessingAnimation(true);
 
-    // Trigger smooth checkmark pulse animation
-    Animated.sequence([
-      Animated.timing(pulseAnim, { toValue: 1.2, duration: 400, useNativeDriver: true }),
-      Animated.spring(checkScaleAnim, { toValue: 1, friction: 4, useNativeDriver: true })
-    ]).start();
+    const startTime = Date.now();
 
     // Call backend fare deduction
     let ticketRecord = null;
@@ -205,14 +206,24 @@ export default function ScanQR({ onBack, navigation }) {
     setWalletBalance(prev => Math.max(0, prev - fare));
     await AsyncStorage.setItem('latestOfflineTicket', JSON.stringify(ticketRecord));
 
+    // Ensure at least 1.2s processing animation time for realistic UX
+    const elapsedTime = Date.now() - startTime;
+    const remainingWait = Math.max(0, 1200 - elapsedTime);
+
     setTimeout(() => {
-      setProcessingAnimation(false);
-      setScanned(false);
-      const nav = navigation || onBack?.navigation;
-      if (nav) {
-        nav.navigate('TicketQR', { ticket: ticketRecord });
-      }
-    }, 1600);
+      // ─── STAGE 2: TRANSITION TO PAYMENT SUCCESS ───
+      setPaymentStage('SUCCESS');
+      Animated.spring(checkScaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }).start();
+
+      setTimeout(() => {
+        setProcessingAnimation(false);
+        setScanned(false);
+        const nav = navigation || onBack?.navigation;
+        if (nav) {
+          nav.navigate('TicketQR', { ticket: ticketRecord });
+        }
+      }, 1500);
+    }, remainingWait);
   };
 
   const handleRazorpayOnlinePayment = async () => {
@@ -462,29 +473,52 @@ export default function ScanQR({ onBack, navigation }) {
         </View>
       </Modal>
 
-      {/* ─── SMOOTH OFFLINE PAYMENT SUCCESS ANIMATION MODAL ─── */}
+      {/* ─── 2-STAGE ANIMATED PAYMENT MODAL (PROCESSING -> SUCCESS) ─── */}
       <Modal visible={processingAnimation} transparent animationType="fade">
         <View style={tw`flex-1 bg-slate-950/90 justify-center items-center p-6`}>
           <View style={tw`bg-slate-900 p-8 rounded-3xl items-center border border-slate-800 shadow-2xl max-w-sm w-full`}>
             
-            <Animated.View style={[tw`w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 justify-center items-center mb-6`, { transform: [{ scale: checkScaleAnim }] }]}>
-              <CheckCircle2 color="#10B981" size={56} />
-            </Animated.View>
+            {paymentStage === 'PROCESSING' ? (
+              <>
+                {/* STAGE 1: PROCESSING / LOADING */}
+                <View style={tw`w-24 h-24 rounded-full bg-blue-500/20 border-2 border-blue-500/50 justify-center items-center mb-6`}>
+                  <ActivityIndicator size="large" color="#38BDF8" />
+                </View>
 
-            <Text style={tw`text-2xl font-bold text-white text-center mb-2`}>Payment Successful 🎉</Text>
-            <Text style={tw`text-sm text-emerald-400 font-semibold mb-4`}>
-              ₹{scannedTrip?.fare.toFixed(2)} debited from E-Wallet
-            </Text>
+                <Text style={tw`text-2xl font-bold text-white text-center mb-2`}>Payment in Progress...</Text>
+                <Text style={tw`text-sm text-slate-400 font-medium mb-4 text-center`}>
+                  Verifying E-Wallet & debiting ₹{scannedTrip?.fare.toFixed(2)}
+                </Text>
 
-            <View style={tw`bg-slate-800/80 px-4 py-2 rounded-xl flex-row items-center mb-6 border border-slate-700`}>
-              <ShieldCheck color="#38BDF8" size={16} />
-              <Text style={tw`text-slate-300 text-xs font-mono ml-2`}>AES-256 Token Generated</Text>
-            </View>
+                <View style={tw`bg-slate-800/80 px-4 py-2 rounded-xl flex-row items-center border border-slate-700`}>
+                  <ShieldCheck color="#38BDF8" size={16} />
+                  <Text style={tw`text-slate-300 text-xs font-mono ml-2`}>Securing AES-256 Token</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                {/* STAGE 2: SUCCESS */}
+                <Animated.View style={[tw`w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 justify-center items-center mb-6`, { transform: [{ scale: checkScaleAnim }] }]}>
+                  <CheckCircle2 color="#10B981" size={56} />
+                </Animated.View>
 
-            <View style={tw`flex-row items-center`}>
-              <ActivityIndicator color="#38BDF8" size="small" />
-              <Text style={tw`text-slate-400 text-xs font-medium ml-2`}>Opening E-Ticket & QR...</Text>
-            </View>
+                <Text style={tw`text-2xl font-bold text-white text-center mb-2`}>Payment Successful 🎉</Text>
+                <Text style={tw`text-sm text-emerald-400 font-semibold mb-4 text-center`}>
+                  ₹{scannedTrip?.fare.toFixed(2)} debited from E-Wallet
+                </Text>
+
+                <View style={tw`bg-slate-800/80 px-4 py-2 rounded-xl flex-row items-center mb-6 border border-slate-700`}>
+                  <ShieldCheck color="#38BDF8" size={16} />
+                  <Text style={tw`text-slate-300 text-xs font-mono ml-2`}>AES-256 Token Generated</Text>
+                </View>
+
+                <View style={tw`flex-row items-center`}>
+                  <ActivityIndicator color="#38BDF8" size="small" />
+                  <Text style={tw`text-slate-400 text-xs font-medium ml-2`}>Opening E-Ticket & QR...</Text>
+                </View>
+              </>
+            )}
+
           </View>
         </View>
       </Modal>

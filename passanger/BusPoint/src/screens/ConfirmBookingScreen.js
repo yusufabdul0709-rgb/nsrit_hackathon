@@ -2,7 +2,7 @@ import React, { useState, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Animated, ScrollView, Modal } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
-import { Bus, MapPin, Ticket as TicketIcon, AlertCircle, CreditCard, Wallet, ShieldCheck, CheckCircle2 } from 'lucide-react-native';
+import { Bus, MapPin, Ticket as TicketIcon, AlertCircle, CreditCard, Wallet, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react-native';
 import { API_BASE_URL } from '../config/api';
 import RazorpayCheckoutModal from '../components/RazorpayCheckoutModal';
 import tw from 'twrnc';
@@ -15,8 +15,9 @@ export default function ConfirmBookingScreen({ route, navigation }) {
   const [razorpayModalVisible, setRazorpayModalVisible] = useState(false);
   const [activeOrder, setActiveOrder] = useState(null);
 
-  // Smooth Offline Payment Animation State
+  // 2-Stage Payment Animation State ('PROCESSING' | 'SUCCESS')
   const [processingAnimation, setProcessingAnimation] = useState(false);
+  const [paymentStage, setPaymentStage] = useState('PROCESSING');
   const checkScaleAnim = useRef(new Animated.Value(0)).current;
 
   const [showErrorMsg, setShowErrorMsg] = useState(false);
@@ -132,23 +133,35 @@ export default function ConfirmBookingScreen({ route, navigation }) {
         setLoading(false);
       }
     } else {
-      // ─── OFFLINE E-WALLET PAYMENT WITH ANIMATION ───
-      setLoading(true);
+      // ─── STAGE 1: SHOW PAYMENT IN PROGRESS LOADING MODAL ───
       setShowErrorMsg(false);
+      setPaymentStage('PROCESSING');
+      checkScaleAnim.setValue(0);
+      setProcessingAnimation(true);
 
+      const startTime = Date.now();
       const ticketObj = await issueTicket('Offline E-Wallet (AES-256 Encrypted)', `TXN-WAL-${Date.now()}`);
-      setLoading(false);
 
-      if (ticketObj) {
-        // Show smooth checkmark pulse animation
-        setProcessingAnimation(true);
+      if (!ticketObj) {
+        // Insufficient balance
+        setProcessingAnimation(false);
+        return;
+      }
+
+      // Ensure at least 1.2s processing animation time for realistic UX
+      const elapsedTime = Date.now() - startTime;
+      const remainingWait = Math.max(0, 1200 - elapsedTime);
+
+      setTimeout(() => {
+        // ─── STAGE 2: TRANSITION TO PAYMENT SUCCESS ───
+        setPaymentStage('SUCCESS');
         Animated.spring(checkScaleAnim, { toValue: 1, friction: 4, useNativeDriver: true }).start();
 
         setTimeout(() => {
           setProcessingAnimation(false);
           navigation.navigate('TicketQR', { ticket: ticketObj });
-        }, 1600);
-      }
+        }, 1500);
+      }, remainingWait);
     }
   };
 
@@ -284,29 +297,52 @@ export default function ConfirmBookingScreen({ route, navigation }) {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ─── SMOOTH OFFLINE PAYMENT SUCCESS ANIMATION MODAL ─── */}
+      {/* ─── 2-STAGE ANIMATED PAYMENT MODAL (PROCESSING -> SUCCESS) ─── */}
       <Modal visible={processingAnimation} transparent animationType="fade">
         <View style={tw`flex-1 bg-slate-950/90 justify-center items-center p-6`}>
           <View style={tw`bg-slate-900 p-8 rounded-3xl items-center border border-slate-800 shadow-2xl max-w-sm w-full`}>
             
-            <Animated.View style={[tw`w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 justify-center items-center mb-6`, { transform: [{ scale: checkScaleAnim }] }]}>
-              <CheckCircle2 color="#10B981" size={56} />
-            </Animated.View>
+            {paymentStage === 'PROCESSING' ? (
+              <>
+                {/* STAGE 1: PROCESSING / LOADING */}
+                <View style={tw`w-24 h-24 rounded-full bg-blue-500/20 border-2 border-blue-500/50 justify-center items-center mb-6`}>
+                  <ActivityIndicator size="large" color="#38BDF8" />
+                </View>
 
-            <Text style={tw`text-2xl font-bold text-white text-center mb-2`}>Payment Successful 🎉</Text>
-            <Text style={tw`text-sm text-emerald-400 font-semibold mb-4 text-center`}>
-              ₹{Number(busData.fare).toFixed(2)} debited from E-Wallet
-            </Text>
+                <Text style={tw`text-2xl font-bold text-white text-center mb-2`}>Payment in Progress...</Text>
+                <Text style={tw`text-sm text-slate-400 font-medium mb-4 text-center`}>
+                  Verifying E-Wallet & debiting ₹{Number(busData.fare).toFixed(2)}
+                </Text>
 
-            <View style={tw`bg-slate-800/80 px-4 py-2 rounded-xl flex-row items-center mb-6 border border-slate-700`}>
-              <ShieldCheck color="#38BDF8" size={16} />
-              <Text style={tw`text-slate-300 text-xs font-mono ml-2`}>AES-256 Token Generated</Text>
-            </View>
+                <View style={tw`bg-slate-800/80 px-4 py-2 rounded-xl flex-row items-center border border-slate-700`}>
+                  <ShieldCheck color="#38BDF8" size={16} />
+                  <Text style={tw`text-slate-300 text-xs font-mono ml-2`}>Securing AES-256 Token</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                {/* STAGE 2: SUCCESS */}
+                <Animated.View style={[tw`w-24 h-24 rounded-full bg-emerald-500/20 border-2 border-emerald-500 justify-center items-center mb-6`, { transform: [{ scale: checkScaleAnim }] }]}>
+                  <CheckCircle2 color="#10B981" size={56} />
+                </Animated.View>
 
-            <View style={tw`flex-row items-center`}>
-              <ActivityIndicator color="#38BDF8" size="small" />
-              <Text style={tw`text-slate-400 text-xs font-medium ml-2`}>Opening E-Ticket & QR...</Text>
-            </View>
+                <Text style={tw`text-2xl font-bold text-white text-center mb-2`}>Payment Successful 🎉</Text>
+                <Text style={tw`text-sm text-emerald-400 font-semibold mb-4 text-center`}>
+                  ₹{Number(busData.fare).toFixed(2)} debited from E-Wallet
+                </Text>
+
+                <View style={tw`bg-slate-800/80 px-4 py-2 rounded-xl flex-row items-center mb-6 border border-slate-700`}>
+                  <ShieldCheck color="#38BDF8" size={16} />
+                  <Text style={tw`text-slate-300 text-xs font-mono ml-2`}>AES-256 Token Generated</Text>
+                </View>
+
+                <View style={tw`flex-row items-center`}>
+                  <ActivityIndicator color="#38BDF8" size="small" />
+                  <Text style={tw`text-slate-400 text-xs font-medium ml-2`}>Opening E-Ticket & QR...</Text>
+                </View>
+              </>
+            )}
+
           </View>
         </View>
       </Modal>
