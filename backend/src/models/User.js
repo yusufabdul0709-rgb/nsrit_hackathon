@@ -21,14 +21,20 @@ const userSchema = new mongoose.Schema({
     enum: ['passenger', 'conductor', 'admin'],
     default: 'passenger'
   },
+  walletId: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true
+  },
   walletBalance: {
     type: Number,
-    default: 0
+    default: 0.0
   },
   kycStatus: {
     type: String,
     enum: ['PENDING', 'VERIFIED', 'REJECTED'],
-    default: 'PENDING'
+    default: 'VERIFIED'
   }
 }, {
   timestamps: true

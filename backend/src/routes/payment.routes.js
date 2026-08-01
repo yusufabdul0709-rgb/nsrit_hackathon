@@ -8,5 +8,7 @@ router.post('/initiate', paymentControllerV2.initiatePayment);
 router.post('/verify', paymentControllerV2.verifyPayment);
 router.post('/offline', paymentControllerV2.recordOfflinePayment);
 router.post('/sync', paymentControllerV2.syncOfflineQueue);
+router.post('/createRazorpayOrder', paymentControllerV2.createRazorpayOrder);
+router.post('/verifyTopUp', paymentControllerV2.verifyTopUp);
 
 module.exports = router;

@@ -38,20 +38,24 @@ exports.register = async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
+      const generatedWalletId = `WAL-APSRTC-${Math.floor(100000 + Math.random() * 900000)}`;
+
       const newUser = await User.create({
         name,
         phone: identifier,
         password: hashedPassword,
-        role: role.toLowerCase()
+        role: role.toLowerCase(),
+        walletId: generatedWalletId,
+        walletBalance: 0
       });
 
       const token = jwt.sign(
-        { id: newUser._id.toString(), role: newUser.role, phone: newUser.phone, name: newUser.name },
+        { id: newUser._id.toString(), role: newUser.role, phone: newUser.phone, name: newUser.name, walletId: generatedWalletId },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
 
-      console.log(`✅ Passenger registered in MongoDB: ${name} (${identifier})`);
+      console.log(`✅ Passenger registered in MongoDB: ${name} (Wallet: ${generatedWalletId})`);
 
       return res.status(201).json({
         success: true,
@@ -62,6 +66,7 @@ exports.register = async (req, res) => {
           name: newUser.name,
           phone: newUser.phone,
           role: newUser.role,
+          walletId: generatedWalletId,
           walletBalance: newUser.walletBalance || 0
         }
       });
@@ -129,20 +134,27 @@ exports.login = async (req, res) => {
       let user = await User.findOne({ phone: identifier });
 
       if (!user) {
-        // Auto-provision passenger user account
+        // Auto-provision passenger user account with unique walletId
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(cleanPassword, salt);
+        const generatedWalletId = `WAL-APSRTC-${Math.floor(100000 + Math.random() * 900000)}`;
         user = await User.create({
           name: `Passenger (${identifier.slice(-4)})`,
           phone: identifier,
           password: hashedPassword,
           role: 'passenger',
-          walletBalance: 250
+          walletId: generatedWalletId,
+          walletBalance: 0
         });
       }
 
+      if (!user.walletId) {
+        user.walletId = `WAL-APSRTC-${Math.floor(100000 + Math.random() * 900000)}`;
+        await user.save();
+      }
+
       const token = jwt.sign(
-        { id: user._id.toString(), role: user.role, phone: user.phone, name: user.name },
+        { id: user._id.toString(), role: user.role, phone: user.phone, name: user.name, walletId: user.walletId },
         JWT_SECRET,
         { expiresIn: '24h' }
       );
@@ -156,7 +168,8 @@ exports.login = async (req, res) => {
           name: user.name,
           phone: user.phone,
           role: user.role,
-          walletBalance: user.walletBalance || 250
+          walletId: user.walletId,
+          walletBalance: user.walletBalance !== undefined ? user.walletBalance : 0
         }
       });
     }

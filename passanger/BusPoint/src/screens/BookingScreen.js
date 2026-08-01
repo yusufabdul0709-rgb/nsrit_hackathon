@@ -78,13 +78,13 @@ export default function BookingScreen({ route, navigation }) {
       }
 
       const mappedBuses = busesList.map((bus, index) => ({
-        id: bus.bus_id || index,
-        name: `${bus.bus_id || 'AP31'} - ${bus.route || (from + ' to ' + to)}`,
-        type: bus.bus_type || "Standard",
+        id: bus.bus_id || `AP31-${index}`,
+        name: `${bus.bus_id || 'AP31'} - ${bus.route || (from + ' → ' + to)}`,
+        type: bus.bus_type || "Express",
         fare: parseFloat(bus.fare_per_passenger) || 45.0,
-        departureTime: "10:30 AM",
-        arrivalTime: "11:30 AM",
-        duration: `${Math.round((parseFloat(bus.distance_km) || 35) / 40)}h 0m`,
+        departureTime: bus.departureTime || "08:30 AM",
+        arrivalTime: bus.arrivalTime || "09:45 AM",
+        duration: `${Math.floor((parseFloat(bus.distance_km) || 35) / 45)}h ${Math.round(((parseFloat(bus.distance_km) || 35) % 45) * 1.3)}m`,
         seatsLeft: Math.max(1, parseInt(bus.capacity || 50) - parseInt(bus.passengers || 15))
       }));
       

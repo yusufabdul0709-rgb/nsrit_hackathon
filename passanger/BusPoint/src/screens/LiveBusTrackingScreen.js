@@ -16,6 +16,8 @@ import { API_BASE_URL } from '../config/api';
 
 const { width, height } = Dimensions.get('window');
 
+const BUS_SVG_DATA_URI = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2054%22%3E%3Crect%20x%3D%222%22%20y%3D%222%22%20width%3D%2220%22%20height%3D%2250%22%20rx%3D%224%22%20fill%3D%22%233B82F6%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%222%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%228%22%20width%3D%2216%22%20height%3D%2210%22%20rx%3D%221%22%20fill%3D%22%230A0E1A%22%2F%3E%3Crect%20x%3D%224%22%20y%3D%2222%22%20width%3D%2216%22%20height%3D%2224%22%20rx%3D%221%22%20fill%3D%22%230A0E1A%22%2F%3E%3C%2Fsvg%3E";
+
 const DARK = {
   bg: '#0A0E1A',
   card: '#141825',
@@ -156,7 +158,7 @@ export default function LiveBusTrackingScreen({ navigation }) {
       // Load Top-Down Bus Avatar
       const img = new Image();
       img.onload = () => map.addImage('bus-icon', img);
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 54"><rect x="2" y="2" width="20" height="50" rx="4" fill="#3B82F6" stroke="#ffffff" stroke-width="2"/><rect x="4" y="8" width="16" height="10" rx="1" fill="#0A0E1A"/><rect x="4" y="22" width="16" height="24" rx="1" fill="#0A0E1A"/></svg>');
+      img.src = "${BUS_SVG_DATA_URI}";
       // Fetch actual highway route using Mapbox Directions API
       const coordsString = coords.map(c => c[0] + ',' + c[1]).join(';');
       const directionsUrl = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + coordsString + '?geometries=geojson&access_token=' + mapboxgl.accessToken;

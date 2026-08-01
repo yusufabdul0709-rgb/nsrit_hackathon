@@ -16,6 +16,7 @@ export default function TicketQRScreen({ route, navigation }) {
   // Build encrypted wallet payload string
   const encryptedPayload = JSON.stringify({
     ticketId: ticket.id || ticket.ticketId || `TKT-${Date.now()}`,
+    walletId: ticket.walletId || 'WAL-APSRTC-987654',
     userName: ticket.passengerName || 'Yusuf Abdul',
     userPhone: ticket.passengerPhone || '+91 9876543210',
     startDestination: ticket.trip?.route?.startStop || ticket.startStop || 'Visakhapatnam (RTC Complex)',

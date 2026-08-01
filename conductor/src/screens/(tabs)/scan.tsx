@@ -65,6 +65,7 @@ export default function ScanScreen({ onBack }: { onBack?: () => void }) {
 
     const txDetails = {
       userName: parsed.userName || parsed.passengerName || 'Yusuf Abdul',
+      walletId: parsed.walletId || 'WAL-APSRTC-987654',
       startDestination: parsed.startDestination || parsed.startStop || 'Visakhapatnam (RTC Complex)',
       endDestination: parsed.endDestination || parsed.endStop || 'Anakapalle',
       transactionId: parsed.transactionId || parsed.ticketId || `TXN-884920`,
@@ -168,6 +169,11 @@ export default function ScanScreen({ onBack }: { onBack?: () => void }) {
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>👤 Passenger Name</Text>
                   <Text style={styles.detailValueBold}>{transactionData.userName}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>👜 Wallet ID</Text>
+                  <Text style={styles.detailValueMono}>{transactionData.walletId}</Text>
                 </View>
 
                 <View style={styles.detailRow}>
