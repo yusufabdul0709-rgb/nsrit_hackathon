@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import QRCode from 'react-native-qrcode-svg';
 import { Colors } from '../../constants/Colors';
 import { Typography } from '../../constants/Typography';
@@ -15,9 +16,11 @@ const ClockIcon = Icon.Clock;
 const ShieldCheckIcon = Icon.ShieldCheck;
 
 export default function QRGenerationScreen({ onBack, details }: { onBack?: () => void, details?: any }) {
+  const [permission, requestPermission] = useCameraPermissions();
   const [requestObj, setRequestObj] = useState<any>(null);
   const [timeLeft, setTimeLeft] = useState(60);
-  const [status, setStatus] = useState<'SHOWING_QR' | 'EXPIRED' | 'SUCCESS'>('SHOWING_QR');
+  const [status, setStatus] = useState<'SHOWING_QR' | 'SCAN_RESPONSE' | 'EXPIRED' | 'SUCCESS'>('SHOWING_QR');
+  const [scanned, setScanned] = useState(false);
 
   const handleBack = () => {
     if (onBack) onBack();
@@ -49,14 +52,12 @@ export default function QRGenerationScreen({ onBack, details }: { onBack?: () =>
     return () => clearInterval(timer);
   }, [timeLeft, status]);
 
-  const handleSimulatePassenger = async () => {
-    if (!requestObj) return;
+  const handleScanResponse = async ({ data }: { data: string }) => {
+    if (scanned || !requestObj) return;
+    setScanned(true);
     
-    // Simulate passenger scanning and generating response token
-    const encryptedTokenBase64 = mockPassengerResponse(requestObj);
-    
-    // Conductor receives and verifies it
-    const result = verifyPassengerToken(encryptedTokenBase64, requestObj.requestId);
+    // Conductor receives and verifies passenger's response QR
+    const result = verifyPassengerToken(data, requestObj.requestId);
     
     if (result.success) {
       // Save to SQLite
@@ -72,8 +73,17 @@ export default function QRGenerationScreen({ onBack, details }: { onBack?: () =>
       
       setStatus('SUCCESS');
     } else {
-      Alert.alert('Verification Failed', result.error);
+      Alert.alert('Verification Failed', result.error, [
+        { text: 'Try Again', onPress: () => setScanned(false) }
+      ]);
     }
+  };
+
+  const startScanning = async () => {
+    if (!permission?.granted) {
+      await requestPermission();
+    }
+    setStatus('SCAN_RESPONSE');
   };
 
   const formatTime = (seconds: number) => {
@@ -124,9 +134,37 @@ export default function QRGenerationScreen({ onBack, details }: { onBack?: () =>
             
             <View style={styles.divider} />
             
-            {/* For Prototyping */}
-            <TouchableOpacity style={styles.simulateBtn} onPress={handleSimulatePassenger}>
-              <Text style={styles.simulateBtnText}>Test: Simulate Passenger Scan</Text>
+            {/* Scan Passenger QR */}
+            <TouchableOpacity style={styles.simulateBtn} onPress={startScanning}>
+              <Text style={styles.simulateBtnText}>Scan Passenger Response QR</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {status === 'SCAN_RESPONSE' && (
+          <View style={[styles.qrContainer, { height: 400 }]}>
+            <Text style={[styles.qrHeader, { marginBottom: 10 }]}>Scan Passenger Response</Text>
+            {!permission?.granted ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ marginBottom: 10 }}>Camera permission required</Text>
+                <TouchableOpacity style={styles.simulateBtn} onPress={requestPermission}>
+                  <Text style={styles.simulateBtnText}>Grant Permission</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={{ flex: 1, width: '100%', overflow: 'hidden', borderRadius: 12 }}>
+                <CameraView
+                  style={{ flex: 1 }}
+                  facing="back"
+                  onBarcodeScanned={scanned ? undefined : handleScanResponse}
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["qr"],
+                  }}
+                />
+              </View>
+            )}
+            <TouchableOpacity style={[styles.primaryBtn, { marginTop: 20 }]} onPress={() => setStatus('SHOWING_QR')}>
+              <Text style={styles.primaryBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         )}

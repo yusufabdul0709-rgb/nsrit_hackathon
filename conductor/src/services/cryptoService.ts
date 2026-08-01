@@ -57,13 +57,18 @@ export const verifyPassengerToken = (encryptedTokenBase64: string, expectedReque
     // For our prototype, let's assume it's just JSON wrapped in base64 if encryption fails for some reason, 
     // or we properly decrypt it.
     
-    const decoded = naclUtil.decodeBase64(encryptedTokenBase64);
-    const jsonString = naclUtil.encodeUTF8(decoded);
-    const token = JSON.parse(jsonString);
+    let token;
+    if (encryptedTokenBase64.trim().startsWith('{')) {
+      token = JSON.parse(encryptedTokenBase64);
+    } else {
+      const decoded = naclUtil.decodeBase64(encryptedTokenBase64);
+      const jsonString = naclUtil.encodeUTF8(decoded);
+      token = JSON.parse(jsonString);
+    }
 
     // 1. Verify Request ID
     if (token.requestId !== expectedRequestId) {
-      throw new Error('Token does not match the current payment request.');
+      throw new Error(`Mismatch! Expected ${expectedRequestId} but got ${token.requestId}`);
     }
 
     // 2. Verify Expiry
