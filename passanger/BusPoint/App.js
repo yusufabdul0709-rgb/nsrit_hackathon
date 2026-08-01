@@ -10,14 +10,16 @@ export default function App() {
 
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <View style={{ flex: 1 }}>
-          <AppNavigator />
-          {!splashFinished && (
-            <AnimatedSplashScreen onFinish={() => setSplashFinished(true)} />
-          )}
-        </View>
-      </SafeAreaProvider>
+      <>
+        <SafeAreaProvider>
+          <View style={{ flex: 1 }}>
+            <AppNavigator />
+          </View>
+        </SafeAreaProvider>
+        {!splashFinished && (
+          <AnimatedSplashScreen onFinish={() => setSplashFinished(true)} />
+        )}
+      </>
     </AuthProvider>
   );
 }

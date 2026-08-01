@@ -118,15 +118,6 @@ export default function LoginScreen({ onLogin, onNavigateRegister }: { onLogin?:
               )}
             </TouchableOpacity>
 
-            <View style={styles.registerContainer}>
-              <Text style={styles.registerText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => {
-                if (onNavigateRegister) onNavigateRegister();
-                else router?.push('/register');
-              }}>
-                <Text style={styles.registerLink}>Sign up</Text>
-              </TouchableOpacity>
-            </View>
           </View>
 
         </ScrollView>

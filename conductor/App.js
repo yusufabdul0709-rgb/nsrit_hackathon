@@ -12,7 +12,7 @@ import UpiPayScreen from './src/screens/(tabs)/upi-pay';
 import QrGenerateScreen from './src/screens/(tabs)/qr-generate';
 import NfcPayScreen from './src/screens/(tabs)/nfc-pay';
 import LoginScreen from './src/screens/(tabs)/login';
-import RegisterScreen from './src/screens/(tabs)/register';
+import AnimatedSplashScreen from './src/components/AnimatedSplashScreen';
 import { Colors } from './src/constants/Colors';
 import * as Icon from './src/components/Icons';
 
@@ -26,22 +26,18 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [paymentDetails, setPaymentDetails] = useState(null);
 
-  const [authScreen, setAuthScreen] = useState('login'); // 'login' | 'register'
+  const [splashFinished, setSplashFinished] = useState(false);
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaProvider style={styles.container}>
-        {authScreen === 'login' ? (
-          <LoginScreen 
-            onLogin={() => setIsAuthenticated(true)} 
-            onNavigateRegister={() => setAuthScreen('register')} 
-          />
-        ) : (
-          <RegisterScreen 
-            onNavigateLogin={() => setAuthScreen('login')}
-          />
+      <>
+        <SafeAreaProvider style={styles.container}>
+          <LoginScreen onLogin={() => setIsAuthenticated(true)} />
+        </SafeAreaProvider>
+        {!splashFinished && (
+          <AnimatedSplashScreen onFinish={() => setSplashFinished(true)} />
         )}
-      </SafeAreaProvider>
+      </>
     );
   }
 
@@ -139,6 +135,9 @@ export default function App() {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+      {!splashFinished && (
+        <AnimatedSplashScreen onFinish={() => setSplashFinished(true)} />
+      )}
     </SafeAreaProvider>
   );
 }
