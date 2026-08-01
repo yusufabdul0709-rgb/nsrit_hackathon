@@ -8,7 +8,9 @@ import {
   Animated, 
   Platform,
   StatusBar,
-  Dimensions
+  Dimensions,
+  NativeModules,
+  NativeEventEmitter
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { 
@@ -44,6 +46,34 @@ export default function ScanPassenger({ onBack }) {
   const [scanResult, setScanResult] = useState(null); // 'valid' | 'invalid' | null
   
   const scanLineAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Start NFC Reader
+    if (NativeModules.OfflinePaymentModule) {
+      const { OfflinePaymentModule } = NativeModules;
+      const emitter = new NativeEventEmitter(OfflinePaymentModule);
+
+      OfflinePaymentModule.startReaderMode();
+
+      const successListener = emitter.addListener('onPaymentSuccess', (event) => {
+        setScanResult('valid');
+        console.log('NFC Offline Payment Success:', event);
+        setTimeout(() => setScanResult(null), 4000);
+      });
+
+      const errorListener = emitter.addListener('onNfcError', (error) => {
+        setScanResult('invalid');
+        console.log('NFC Error:', error);
+        setTimeout(() => setScanResult(null), 4000);
+      });
+
+      return () => {
+        OfflinePaymentModule.stopReaderMode();
+        successListener.remove();
+        errorListener.remove();
+      };
+    }
+  }, []);
 
   useEffect(() => {
     Animated.loop(

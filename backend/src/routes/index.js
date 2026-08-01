@@ -15,6 +15,7 @@ const routeRoutes = require('./route.routes');
 const ticketRoutes = require('./ticket.routes');
 const tripRoutes = require('./trip.routes');
 const walletRoutes = require('./wallet.routes');
+const offlinePaymentRoute = require('./offlinePaymentRoute');
 
 router.use('/admin', adminRoutes);
 router.use('/ai', aiRoutes);
@@ -34,6 +35,7 @@ router.use('/ticket_v2', require('./ticket_v2.routes')); // from HEAD
 router.use('/training', require('./training.routes')); // from HEAD
 router.use('/trips', tripRoutes);
 router.use('/wallet', walletRoutes);
+router.use('/offline-payment', offlinePaymentRoute);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
