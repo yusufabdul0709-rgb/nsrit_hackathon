@@ -41,7 +41,7 @@ export default function LoginScreen({ onLogin, onNavigateRegister }: { onLogin?:
         if (onLogin) onLogin();
         if (router?.replace) router.replace('/');
       } else {
-        Alert.alert(isSignUp ? 'Signup Failed' : 'Login Failed', res.message || 'Invalid conductor credentials');
+        Alert.alert('Login Failed', res.message || 'Invalid conductor credentials');
       }
     } catch (err) {
       Alert.alert('Network Error', 'Failed to reach server. Please check backend connection.');
