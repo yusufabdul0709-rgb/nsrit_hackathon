@@ -324,12 +324,6 @@ const RecentJourneys = ({ navigation }) => (
 export default function HomeScreen({ navigation }) {
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const fabTranslateY = scrollY.interpolate({
-    inputRange: [0, 50, 100],
-    outputRange: [0, 0, 100],
-    extrapolate: 'clamp',
-  });
-
   return (
     <View style={tw`flex-1 bg-slate-50`}>
       <StatusBar barStyle="light-content" backgroundColor="#0D6EFD" />
@@ -361,16 +355,6 @@ export default function HomeScreen({ navigation }) {
           <RecentJourneys navigation={navigation} />
         </View>
       </Animated.ScrollView>
-
-      {/* AI Assistant FAB */}
-      <Animated.View style={[tw`absolute bottom-6 right-6 z-50`, { transform: [{ translateY: fabTranslateY }] }]}>
-        <TouchableOpacity 
-          style={tw`w-15 h-15 rounded-full bg-purple-600 justify-center items-center shadow-lg`} 
-          onPress={() => navigation.navigate('AIAssistant')}
-        >
-          <Bot color="#FFFFFF" size={28} />
-        </TouchableOpacity>
-      </Animated.View>
     </View>
   );
 }
