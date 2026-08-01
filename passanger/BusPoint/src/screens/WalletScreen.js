@@ -178,8 +178,8 @@ export default function WalletScreen() {
             <Text style={tw`text-white text-4xl font-extrabold`}>₹{balance.toFixed(2)}</Text>
           )}
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={tw`bg-white flex-row items-center justify-center py-3.5 rounded-2xl`}
           onPress={() => setTopupModalVisible(true)}
         >
@@ -190,7 +190,7 @@ export default function WalletScreen() {
 
       <View style={tw`flex-1`}>
         <Text style={tw`text-lg font-bold text-slate-800 mb-3`}>Online Payment Options</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={tw`bg-white p-4 rounded-2xl border border-slate-200 mb-3 flex-row items-center justify-between shadow-sm`}
           onPress={() => setTopupModalVisible(true)}
         >
@@ -237,7 +237,7 @@ export default function WalletScreen() {
           <View style={tw`bg-white rounded-t-3xl p-6 pb-10`}>
             <Text style={tw`text-2xl font-bold text-slate-800 mb-1`}>Razorpay Wallet Top Up</Text>
             <Text style={tw`text-xs text-slate-500 mb-5`}>Target Wallet: <Text style={tw`font-bold font-mono text-slate-800`}>{walletId}</Text></Text>
-            
+
             <TextInput
               style={tw`bg-slate-50 h-14 rounded-xl px-4 text-lg text-slate-800 border border-slate-200 mb-4`}
               placeholder="Amount in ₹ (e.g. 100)"
@@ -253,17 +253,17 @@ export default function WalletScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            
+
             <View style={tw`flex-row justify-between`}>
-              <TouchableOpacity 
-                style={tw`flex-1 h-14 rounded-xl justify-center items-center bg-slate-100 mr-2`} 
+              <TouchableOpacity
+                style={tw`flex-1 h-14 rounded-xl justify-center items-center bg-slate-100 mr-2`}
                 onPress={() => setTopupModalVisible(false)}
               >
                 <Text style={tw`text-slate-600 text-base font-bold`}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={tw`flex-1 h-14 rounded-xl justify-center items-center bg-[#0D6EFD] ml-2`} 
+
+              <TouchableOpacity
+                style={tw`flex-1 h-14 rounded-xl justify-center items-center bg-[#0D6EFD] ml-2`}
                 onPress={handleOpenRazorpay}
                 disabled={loading}
               >
