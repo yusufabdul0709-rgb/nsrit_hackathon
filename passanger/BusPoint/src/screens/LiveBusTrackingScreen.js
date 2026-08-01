@@ -33,8 +33,23 @@ const DARK = {
 };
 
 export default function LiveBusTrackingScreen({ navigation }) {
-  const [trackingData, setTrackingData] = useState(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [trackingData, setTrackingData] = useState({
+    busNumber: 'AP 31 TB 4567',
+    route: '400D Express (RTC Complex → Anakapalle)',
+    status: 'on_time',
+    delay: 'On Time 🟢',
+    currentStop: 'RTC Complex',
+    nextStop: 'Maddilapalem',
+    etaToNext: '4 mins',
+    progressPercent: 40,
+    lat: 17.7231,
+    lng: 83.3012,
+    speed: 42,
+    heading: 180,
+    passengerCount: 38,
+    aiData: { crowdLevel: 'Medium', aiRecommendation: 'Next stop NAD has less crowd.' }
+  });
+  const [isConnected, setIsConnected] = useState(true);
   const [showMap, setShowMap] = useState(false);
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const webViewRef = useRef(null);

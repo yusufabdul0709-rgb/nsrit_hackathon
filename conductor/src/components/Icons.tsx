@@ -102,7 +102,6 @@ export {
   Ellipsis as MoreHorizontal,
   CreditCard,
   ArrowRight,
-  ArrowLeft,
   CircleCheck,
   CircleCheck as CheckCircle,
   Lock,

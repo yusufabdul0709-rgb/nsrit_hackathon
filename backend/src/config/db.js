@@ -63,19 +63,22 @@ class DataStore {
 const dbStore = new DataStore();
 
 const connectDB = async () => {
-  const mongoURI = process.env.MONGODB_URI;
+  // Support both env key names
+  const mongoURI = process.env.MONGODB_URI || process.env.DATABASE_URL;
   if (mongoURI && mongoose) {
     try {
-      await mongoose.connect(mongoURI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
+      try {
+        const dns = require('dns');
+        dns.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+      } catch (dnsErr) {}
+
+      await mongoose.connect(mongoURI, { serverSelectionTimeoutMS: 5000 });
       console.log('✅ MongoDB Atlas connected successfully.');
     } catch (err) {
       console.warn('⚠️ MongoDB connection failed. Falling back to dynamic store:', err.message);
     }
   } else {
-    console.log('ℹ️ MONGODB_URI or Mongoose module not active. Using high-performance dynamic store.');
+    console.log('ℹ️ MONGODB_URI not set or Mongoose not installed. Using in-memory dynamic store.');
   }
 };
 

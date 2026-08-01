@@ -3,57 +3,39 @@ import { View, Text, TouchableOpacity, TextInput, FlatList, Keyboard, ActivityIn
 import { MapPin, Search, Bus, ArrowRight, Calendar } from 'lucide-react-native';
 import { API_BASE_URL } from '../config/api';
 import tw from 'twrnc';
+import { fetchPlaceSuggestions } from '../services/mapboxService';
 
 export default function BookingScreen({ route, navigation }) {
   const { initialStart = '', initialEnd = '' } = route?.params || {};
   
   const [startStop, setStartStop] = useState(initialStart);
   const [endStop, setEndStop] = useState(initialEnd);
-  const [selectedDate, setSelectedDate] = useState('Today (31 Jul)');
+  const [selectedDate, setSelectedDate] = useState('Today (1 Aug)');
   const [showSuggestions, setShowSuggestions] = useState(null);
+  const [mapboxSuggestions, setMapboxSuggestions] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
-  const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const FALLBACK_LOCATIONS = [
-    'Visakhapatnam', 'Anakapalle', 'Gajuwaka', 'Hyderabad', 'Vijayawada',
-    'Rajahmundry', 'Kakinada', 'Tirupati', 'Guntur', 'Nellore'
-  ];
-
   useEffect(() => {
-    fetchLocations();
-      
     if (initialStart && initialEnd) {
       handleSearch(initialStart, initialEnd);
     }
   }, []);
 
-  const fetchLocations = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/buses/locations`);
-      const contentType = res.headers.get('content-type');
-      if (res.ok && contentType && contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data.locations && data.locations.length > 0) {
-          setLocations(data.locations);
-          return;
-        }
-      }
-      setLocations(FALLBACK_LOCATIONS);
-    } catch (err) {
-      setLocations(FALLBACK_LOCATIONS);
+  useEffect(() => {
+    if (showSuggestions === 'start' && startStop) {
+      fetchPlaceSuggestions(startStop).then(setMapboxSuggestions);
+    } else if (showSuggestions === 'end' && endStop) {
+      fetchPlaceSuggestions(endStop).then(setMapboxSuggestions);
+    } else {
+      setMapboxSuggestions([]);
     }
-  };
+  }, [startStop, endStop, showSuggestions]);
 
-  const filteredLocations = (query) => {
-    if (!query) return locations.slice(0, 5);
-    return locations.filter(loc => loc.toLowerCase().includes(query.toLowerCase()));
-  };
-
-  const handleSelectLocation = (location) => {
-    if (showSuggestions === 'start') setStartStop(location);
-    if (showSuggestions === 'end') setEndStop(location);
+  const handleSelectLocation = (locationName) => {
+    if (showSuggestions === 'start') setStartStop(locationName);
+    if (showSuggestions === 'end') setEndStop(locationName);
     setShowSuggestions(null);
     Keyboard.dismiss();
     setHasSearched(false);
@@ -118,9 +100,15 @@ export default function BookingScreen({ route, navigation }) {
   };
 
   const renderSuggestion = ({ item }) => (
-    <TouchableOpacity style={tw`flex-row items-center p-3 border-b border-slate-100`} onPress={() => handleSelectLocation(item)}>
-      <MapPin color="#64748B" size={16} />
-      <Text style={tw`ml-2 text-sm text-slate-800`}>{item}</Text>
+    <TouchableOpacity 
+      style={tw`p-3 border-b border-slate-100 flex-row items-center`}
+      onPress={() => handleSelectLocation(item.name || item)}
+    >
+      <MapPin color="#0D6EFD" size={16} />
+      <View style={tw`ml-3 flex-1`}>
+        <Text style={tw`text-xs font-bold text-slate-800`}>{item.name || item}</Text>
+        {item.place_name && <Text style={tw`text-[10px] text-slate-500`} numberOfLines={1}>{item.place_name}</Text>}
+      </View>
     </TouchableOpacity>
   );
 
@@ -181,11 +169,11 @@ export default function BookingScreen({ route, navigation }) {
           </View>
         </View>
         
-        {showSuggestions === 'start' && startStop.length > 0 && (
-          <View style={tw`mt-2 ml-9 bg-white rounded-lg border border-slate-200 max-h-[150px]`}>
+        {showSuggestions === 'start' && mapboxSuggestions.length > 0 && (
+          <View style={tw`mt-2 ml-9 bg-white rounded-xl border border-slate-200 shadow-md max-h-[180px] z-50`}>
             <FlatList
-              data={filteredLocations(startStop)}
-              keyExtractor={(item) => item}
+              data={mapboxSuggestions}
+              keyExtractor={(item, index) => index.toString()}
               renderItem={renderSuggestion}
               keyboardShouldPersistTaps="handled"
             />
@@ -208,6 +196,17 @@ export default function BookingScreen({ route, navigation }) {
             />
           </View>
         </View>
+
+        {showSuggestions === 'end' && mapboxSuggestions.length > 0 && (
+          <View style={tw`mt-2 ml-9 bg-white rounded-xl border border-slate-200 shadow-md max-h-[180px] z-50`}>
+            <FlatList
+              data={mapboxSuggestions}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={renderSuggestion}
+              keyboardShouldPersistTaps="handled"
+            />
+          </View>
+        )}
 
         <View style={tw`h-[1px] bg-slate-100 my-4 ml-9`} />
 

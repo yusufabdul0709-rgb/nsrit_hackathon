@@ -148,7 +148,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
       </View>
 
       <View style={tw`bg-blue-50/80 rounded-2xl p-5 items-center mb-5 border border-blue-200/50`}>
-        <Text style={tw`text-sm color-[#0D6EFD] font-semibold mb-1`}>Total Fare</Text>
+        <Text style={tw`text-sm text-[#0D6EFD] font-semibold mb-1`}>Total Fare</Text>
         <View style={tw`flex-row items-center`}>
           <Text style={tw`text-4xl font-bold text-slate-800`}>₹{Number(busData.fare).toFixed(2)}</Text>
           <View style={tw`bg-red-100 border border-red-300 px-2 py-1 rounded-lg ml-2.5`}>

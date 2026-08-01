@@ -7,6 +7,7 @@ import { Typography } from '../../constants/Typography';
 import * as Icon from '../../components/Icons';
 
 
+import { useRouter } from 'expo-router';
 import { apiClient } from '../../services/apiClient';
 
 const UserIcon = Icon.User;
@@ -14,6 +15,10 @@ const LockIcon = Icon.Lock;
 const ArrowRightIcon = Icon.ArrowRight;
 
 export default function LoginScreen({ onLogin }: { onLogin?: () => void }) {
+  let router: any = null;
+  try {
+    router = useRouter();
+  } catch (e) {}
 
   const [conductorId, setConductorId] = useState('');
   const [password, setPassword] = useState('');
