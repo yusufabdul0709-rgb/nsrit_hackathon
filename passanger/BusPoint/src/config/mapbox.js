@@ -1,4 +1,4 @@
-export const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAP_BOX_API || '';
+export const MAPBOX_ACCESS_TOKEN = process.env.EXPO_PUBLIC_MAP_BOX_API || process.env.MAP_BOX_API || 'pk.eyJ1IjoieXVzdWZhYmR1bDA3MDkiLCJhIjoiY21yejZuN3p1MGR2cjJ3cHluOTg1aTdrZiJ9.ZIQVuLFNzhTi3GppnXc6Dg';
 
 // Sample Bus Route coordinates (Visakhapatnam - Anakapalle Route)
 export const MOCK_BUS_STOPS = [

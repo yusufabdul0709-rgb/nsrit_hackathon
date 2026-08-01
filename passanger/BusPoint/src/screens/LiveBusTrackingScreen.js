@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet, Text, View, ScrollView, TouchableOpacity,
@@ -731,3 +732,5 @@ const styles = StyleSheet.create({
   },
   buyTicketText: { color: '#FFF', fontSize: 15, fontWeight: '700', marginLeft: 10 },
 });
+=======
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2

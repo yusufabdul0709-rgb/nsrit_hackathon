@@ -16,6 +16,7 @@ export default function TicketQRScreen({ route, navigation }) {
   // Build encrypted wallet payload string
   const encryptedPayload = JSON.stringify({
     ticketId: ticket.id || ticket.ticketId || `TKT-${Date.now()}`,
+    walletId: ticket.walletId || 'WAL-APSRTC-987654',
     userName: ticket.passengerName || 'Yusuf Abdul',
     userPhone: ticket.passengerPhone || '+91 9876543210',
     startDestination: ticket.trip?.route?.startStop || ticket.startStop || 'Visakhapatnam (RTC Complex)',
@@ -160,7 +161,7 @@ export default function TicketQRScreen({ route, navigation }) {
 
       <ScrollView contentContainerStyle={tw`p-5 items-center pb-12`} showsVerticalScrollIndicator={false}>
         <View style={tw`bg-white rounded-3xl w-full shadow-sm overflow-hidden mb-6 border border-slate-100`}>
-          
+
           {/* QR Code Section - Disappears when scanned to avoid misuse */}
           <View style={tw`p-7 items-center bg-white`}>
             {!isRedeemed ? (
@@ -238,8 +239,8 @@ export default function TicketQRScreen({ route, navigation }) {
           </View>
         </View>
 
-        <TouchableOpacity 
-          style={tw`bg-[#0D6EFD] flex-row w-full py-4 rounded-2xl justify-center items-center mb-4`} 
+        <TouchableOpacity
+          style={tw`bg-[#0D6EFD] flex-row w-full py-4 rounded-2xl justify-center items-center mb-4`}
           onPress={generatePDF}
           disabled={isGenerating}
         >
@@ -252,7 +253,7 @@ export default function TicketQRScreen({ route, navigation }) {
             </>
           )}
         </TouchableOpacity>
-        
+
         <Text style={tw`text-xs text-slate-500 text-center px-5`}>
           Encrypted token automatically expires upon scanning to maintain zero fraud guarantee.
         </Text>

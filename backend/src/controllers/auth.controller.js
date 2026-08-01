@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { dbStore } = require('../config/db');
@@ -240,3 +241,5 @@ exports.getProfile = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+=======
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
