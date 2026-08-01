@@ -141,7 +141,7 @@ export default function LiveBusTrackingScreen({ navigation }) {
       // Load Top-Down Bus Avatar
       const img = new Image();
       img.onload = () => map.addImage('bus-icon', img);
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 54"><rect x="2" y="2" width="20" height="50" rx="4" fill="#3B82F6" stroke="#ffffff" stroke-width="2"/><rect x="4" y="8" width="16" height="10" rx="1" fill="#0A0E1A"/><rect x="4" y="22" width="16" height="24" rx="1" fill="#0A0E1A"/></svg>`);
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 54"><rect x="2" y="2" width="20" height="50" rx="4" fill="#3B82F6" stroke="#ffffff" stroke-width="2"/><rect x="4" y="8" width="16" height="10" rx="1" fill="#0A0E1A"/><rect x="4" y="22" width="16" height="24" rx="1" fill="#0A0E1A"/></svg>');
       // Fetch actual highway route using Mapbox Directions API
       const coordsString = coords.map(c => c[0] + ',' + c[1]).join(';');
       const directionsUrl = 'https://api.mapbox.com/directions/v5/mapbox/driving/' + coordsString + '?geometries=geojson&access_token=' + mapboxgl.accessToken;
