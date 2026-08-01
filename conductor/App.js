@@ -12,6 +12,7 @@ import UpiPayScreen from './src/screens/(tabs)/upi-pay';
 import QrGenerateScreen from './src/screens/(tabs)/qr-generate';
 import NfcPayScreen from './src/screens/(tabs)/nfc-pay';
 import LoginScreen from './src/screens/(tabs)/login';
+import RegisterScreen from './src/screens/(tabs)/register';
 import { Colors } from './src/constants/Colors';
 import * as Icon from './src/components/Icons';
 
@@ -25,10 +26,21 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [paymentDetails, setPaymentDetails] = useState(null);
 
+  const [authScreen, setAuthScreen] = useState('login'); // 'login' | 'register'
+
   if (!isAuthenticated) {
     return (
       <SafeAreaProvider style={styles.container}>
-        <LoginScreen onLogin={() => setIsAuthenticated(true)} />
+        {authScreen === 'login' ? (
+          <LoginScreen 
+            onLogin={() => setIsAuthenticated(true)} 
+            onNavigateRegister={() => setAuthScreen('register')} 
+          />
+        ) : (
+          <RegisterScreen 
+            onNavigateLogin={() => setAuthScreen('login')}
+          />
+        )}
       </SafeAreaProvider>
     );
   }
@@ -67,7 +79,7 @@ export default function App() {
     return <UpiPayScreen onBack={() => setActiveTab('tickets')} />;
   }
   if (activeTab === 'qr-generate') {
-    return <QrGenerateScreen onBack={() => setActiveTab('offline-pay')} />;
+    return <QrGenerateScreen onBack={() => setActiveTab('offline-pay')} details={paymentDetails} />;
   }
   if (activeTab === 'nfc-pay') {
     return <NfcPayScreen onBack={() => setActiveTab('offline-pay')} />;

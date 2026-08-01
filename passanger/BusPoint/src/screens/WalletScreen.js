@@ -1,6 +1,18 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
 import { AuthContext } from '../context/AuthContext';
+<<<<<<< HEAD
+import { Wallet, Plus, RefreshCw, QrCode, WifiOff } from 'lucide-react-native';
+import { API_BASE_URL } from '../config/api';
+import { getWalletBalance } from '../services/database';
+import tw from 'twrnc';
+
+export default function WalletScreen() {
+  const { userToken } = useContext(AuthContext);
+  const [balance, setBalance] = useState(0);
+  const [offlineBalance, setOfflineBalance] = useState(0);
+  const [loading, setLoading] = useState(true);
+=======
 import { Wallet, Plus, RefreshCw, CreditCard, ShieldCheck } from 'lucide-react-native';
 import { API_BASE_URL } from '../config/api';
 import RazorpayCheckoutModal from '../components/RazorpayCheckoutModal';
@@ -10,6 +22,7 @@ export default function WalletScreen() {
   const { userData, userToken } = useContext(AuthContext);
   const [balance, setBalance] = useState(userData?.walletBalance || 0);
   const [loading, setLoading] = useState(false);
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
   const [topupModalVisible, setTopupModalVisible] = useState(false);
   const [razorpayModalVisible, setRazorpayModalVisible] = useState(false);
   const [amountToAdd, setAmountToAdd] = useState('100');
@@ -38,8 +51,19 @@ export default function WalletScreen() {
       if (txRes.ok && txData.transactions) {
         setTransactions(txData.transactions);
       }
+      
+      // Fetch local offline wallet balance
+      const offBal = await getWalletBalance();
+      setOfflineBalance(offBal);
     } catch (error) {
+<<<<<<< HEAD
+      console.log('Error fetching balance:', error);
+      // Even if network fails, load offline balance
+      const offBal = await getWalletBalance();
+      setOfflineBalance(offBal);
+=======
       console.log('Error fetching wallet details:', error);
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
     } finally {
       setLoading(false);
     }
@@ -188,6 +212,31 @@ export default function WalletScreen() {
         </TouchableOpacity>
       </View>
 
+<<<<<<< HEAD
+      <View style={tw`bg-emerald-600 rounded-3xl p-6 shadow-lg shadow-emerald-500/30 mt-4`}>
+        <View style={tw`flex-row justify-between items-center mb-4`}>
+          <View style={tw`flex-row items-center`}>
+            <WifiOff color="#FFFFFF" size={24} />
+            <Text style={tw`text-white text-lg font-bold ml-2`}>Offline Wallet</Text>
+          </View>
+          <Text style={tw`text-white text-2xl font-bold`}>₹{offlineBalance.toFixed(2)}</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={tw`bg-white flex-row items-center justify-center py-3.5 rounded-2xl`}
+          onPress={() => navigation.navigate('ScanPayScreen')}
+        >
+          <QrCode color="#059669" size={20} />
+          <Text style={tw`text-[#059669] text-base font-bold ml-2`}>Scan to Pay Offline</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={tw`mt-8 flex-1`}>
+        <Text style={tw`text-lg font-bold text-slate-800 mb-4`}>Recent Activity</Text>
+        <View style={tw`flex-1 justify-center items-center`}>
+          <Text style={tw`text-slate-500 text-base`}>No recent transactions.</Text>
+        </View>
+=======
       <View style={tw`flex-1`}>
         <Text style={tw`text-lg font-bold text-slate-800 mb-3`}>Online Payment Options</Text>
         <TouchableOpacity
@@ -224,6 +273,7 @@ export default function WalletScreen() {
             </View>
           )}
         </ScrollView>
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
       </View>
 
       {/* Topup Amount Input Modal */}

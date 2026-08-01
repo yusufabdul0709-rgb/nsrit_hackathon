@@ -338,3 +338,62 @@ exports.getAnalytics = async (req, res) => {
     syncLogs: dbStore.syncLogs,
   });
 };
+
+// ─── Conductor Approvals ───
+exports.getPendingConductors = async (req, res) => {
+  try {
+    let pending = [];
+    
+    // Check MongoDB if connected
+    let mongoose = null;
+    let User = null;
+    try {
+      mongoose = require('mongoose');
+      User = require('../models/User');
+    } catch(e) {}
+    
+    if (User && mongoose && mongoose.connection && mongoose.connection.readyState === 1) {
+      pending = await User.find({ role: 'conductor', isApproved: false }).select('-password');
+    } else {
+      // Fallback in-memory
+      pending = dbStore.users.filter(u => u.role === 'conductor' && u.isApproved === false);
+    }
+    
+    return res.status(200).json({ success: true, pending });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+exports.approveConductor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check MongoDB if connected
+    let mongoose = null;
+    let User = null;
+    try {
+      mongoose = require('mongoose');
+      User = require('../models/User');
+    } catch(e) {}
+    
+    if (User && mongoose && mongoose.connection && mongoose.connection.readyState === 1) {
+      const user = await User.findById(id);
+      if (!user) return res.status(404).json({ success: false, message: 'Conductor not found' });
+      
+      user.isApproved = true;
+      await user.save();
+    } else {
+      // Fallback in-memory
+      const user = dbStore.users.find(u => u.id === id || u._id === id);
+      if (!user) return res.status(404).json({ success: false, message: 'Conductor not found' });
+      
+      user.isApproved = true;
+    }
+    
+    return res.status(200).json({ success: true, message: 'Conductor approved successfully' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+

@@ -22,6 +22,7 @@ import TicketQRScreen from '../screens/TicketQRScreen';
 import AIAssistantScreen from '../screens/AIAssistantScreen';
 import FeedbackScreen from '../screens/FeedbackScreen';
 import LiveBusTrackingScreen from '../screens/LiveBusTrackingScreen';
+import ScanPayScreen from '../screens/ScanPayScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -139,6 +140,7 @@ function AppStack() {
       <Stack.Screen name="BookingScreen" component={BookingScreen} />
       <Stack.Screen name="ConfirmBookingScreen" component={ConfirmBookingScreen} />
       <Stack.Screen name="TicketQRScreen" component={TicketQRScreen} />
+      <Stack.Screen name="ScanPayScreen" component={ScanPayScreen} />
       <Stack.Screen name="LiveBusTrackingScreen" component={LiveBusTrackingScreen} />
       <Stack.Screen name="Journey" component={BookingScreen} />
       <Stack.Screen name="Wallet" component={WalletScreen} />

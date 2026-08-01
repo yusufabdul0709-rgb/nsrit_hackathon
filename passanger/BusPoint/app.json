@@ -27,7 +27,8 @@
         {
           "cameraPermission": "Allow BusPoint to access camera to scan ticket QR codes."
         }
-      ]
+      ],
+      "expo-sqlite"
     ]
   }
 }

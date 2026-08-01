@@ -12,12 +12,21 @@ export default function RegisterScreen({ navigation }) {
   const { login } = useContext(AuthContext);
 
   const handleRegister = async () => {
+<<<<<<< HEAD
+    const trimmedName = name?.trim() || '';
+    const trimmedPhone = phone?.trim() || '';
+    const trimmedPassword = password?.trim() || '';
+
+    if (!trimmedPhone || !trimmedPassword || !trimmedName) {
+      Alert.alert('Validation Error', `Please fill all fields. Name: ${trimmedName ? 'Yes' : 'No'}, Phone: ${trimmedPhone ? 'Yes' : 'No'}, Password: ${trimmedPassword ? 'Yes' : 'No'}`);
+=======
     const cleanName = name.trim();
     const cleanPhone = phone.trim();
     const cleanPassword = password.trim();
 
     if (!cleanName || !cleanPhone || !cleanPassword) {
       Alert.alert('Error', 'Please fill in all fields (Full Name, Phone, and Password)');
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
       return;
     }
     
@@ -26,7 +35,11 @@ export default function RegisterScreen({ navigation }) {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+<<<<<<< HEAD
+        body: JSON.stringify({ name: trimmedName, phone: trimmedPhone, password: trimmedPassword })
+=======
         body: JSON.stringify({ name: cleanName, phone: cleanPhone, password: cleanPassword })
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
       });
       
       const data = await response.json();
@@ -34,6 +47,12 @@ export default function RegisterScreen({ navigation }) {
       if (response.ok && data.token) {
         login(data.token, data.user);
       } else {
+<<<<<<< HEAD
+        Alert.alert('Registration Failed', data.message || 'Registration failed on server');
+      }
+    } catch (error) {
+      Alert.alert('Network Error', 'Network error. Make sure the backend is running.');
+=======
         // Fallback auto-sign up
         const newUser = {
           id: `USER-${Date.now()}`,
@@ -54,6 +73,7 @@ export default function RegisterScreen({ navigation }) {
         walletBalance: 250
       };
       login('OFFLINE_JWT_TOKEN_NEW_USER', newUser);
+>>>>>>> a8fa34e010060dd44d2595f0e95ac7d45f17bcd2
     } finally {
       setLoading(false);
     }
@@ -64,7 +84,11 @@ export default function RegisterScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={tw`flex-1 bg-slate-50`}
     >
-      <ScrollView contentContainerStyle={tw`flex-grow p-5 justify-center`} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={tw`flex-grow p-5 justify-center`} 
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={tw`mb-10 mt-5`}>
           <Text style={tw`text-3xl font-bold text-slate-800 mb-2.5`}>Create Account</Text>
           <Text style={tw`text-base text-slate-500`}>Join APSRTC Smart Bus today</Text>
