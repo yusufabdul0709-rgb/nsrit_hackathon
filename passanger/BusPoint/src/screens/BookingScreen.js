@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, TextInput, FlatList, Keyboard, ActivityIndicator, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { MapPin, Search, Bus, ArrowRight, Calendar } from 'lucide-react-native';
 import { API_BASE_URL } from '../config/api';
 import tw from 'twrnc';
@@ -23,244 +24,196 @@ export default function BookingScreen({ route, navigation }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (showSuggestions === 'start' && startStop) {
-      fetchPlaceSuggestions(startStop).then(setMapboxSuggestions);
-    } else if (showSuggestions === 'end' && endStop) {
-      fetchPlaceSuggestions(endStop).then(setMapboxSuggestions);
+  const handleInputChange = async (text, type) => {
+    if (type === 'start') setStartStop(text);
+    else setEndStop(text);
+
+    if (text.trim().length > 1) {
+      setShowSuggestions(type);
+      const suggestions = await fetchPlaceSuggestions(text);
+      setMapboxSuggestions(suggestions);
     } else {
+      setShowSuggestions(null);
       setMapboxSuggestions([]);
     }
-  }, [startStop, endStop, showSuggestions]);
+  };
 
-  const handleSelectLocation = (locationName) => {
-    if (showSuggestions === 'start') setStartStop(locationName);
-    if (showSuggestions === 'end') setEndStop(locationName);
+  const handleSelectSuggestion = (placeName, type) => {
+    if (type === 'start') setStartStop(placeName);
+    else setEndStop(placeName);
+
     setShowSuggestions(null);
+    setMapboxSuggestions([]);
     Keyboard.dismiss();
-    setHasSearched(false);
   };
 
   const handleSearch = async (from = startStop, to = endStop) => {
     if (!from || !to) return;
     setLoading(true);
+    setHasSearched(true);
+    setShowSuggestions(null);
+
     try {
-      const res = await fetch(`${API_BASE_URL}/api/buses/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
-      const contentType = res.headers.get('content-type');
-      let busesList = [];
-
-      if (res.ok && contentType && contentType.includes('application/json')) {
-        const data = await res.json();
-        busesList = data.results || [];
+      const response = await fetch(`${API_BASE_URL}/api/routes/search?startStop=${encodeURIComponent(from)}&endStop=${encodeURIComponent(to)}`);
+      const data = await response.json();
+      if (response.ok) {
+        setSearchResults(data.buses || []);
+      } else {
+        setSearchResults([]);
       }
-
-      if (busesList.length === 0) {
-        busesList = [
-          {
-            bus_id: 'AP31-400D',
-            route: `${from} - ${to}`,
-            bus_type: 'Express',
-            fare_per_passenger: '45.00',
-            distance_km: '35',
-            capacity: '50',
-            passengers: '15'
-          },
-          {
-            bus_id: 'AP31-900K',
-            route: `${from} - ${to}`,
-            bus_type: 'Super Luxury',
-            fare_per_passenger: '65.00',
-            distance_km: '35',
-            capacity: '40',
-            passengers: '20'
-          }
-        ];
-      }
-
-      const mappedBuses = busesList.map((bus, index) => ({
-        id: bus.bus_id || `AP31-${index}`,
-        name: `${bus.bus_id || 'AP31'} - ${bus.route || (from + ' → ' + to)}`,
-        type: bus.bus_type || "Express",
-        fare: parseFloat(bus.fare_per_passenger) || 45.0,
-        departureTime: bus.departureTime || "08:30 AM",
-        arrivalTime: bus.arrivalTime || "09:45 AM",
-        duration: `${Math.floor((parseFloat(bus.distance_km) || 35) / 45)}h ${Math.round(((parseFloat(bus.distance_km) || 35) % 45) * 1.3)}m`,
-        seatsLeft: Math.max(1, parseInt(bus.capacity || 50) - parseInt(bus.passengers || 15))
-      }));
-      
-      setSearchResults(mappedBuses);
-      setHasSearched(true);
-      setShowSuggestions(null);
-      Keyboard.dismiss();
-    } catch (err) {
-      console.warn('Fallback search applied');
+    } catch (error) {
+      console.log('Error searching routes:', error);
+      setSearchResults([
+        {
+          id: 'AP31-RTC-101',
+          name: 'AP31-RTC-101 - Rajahmundry → Visakhapatnam (RTC Complex)',
+          fare: 50.0,
+          departureTime: '06:00 AM',
+          arrivalTime: '07:12 AM',
+          duration: '1h 12m'
+        }
+      ]);
     } finally {
       setLoading(false);
     }
   };
 
-  const renderSuggestion = ({ item }) => (
-    <TouchableOpacity 
-      style={tw`p-3 border-b border-slate-100 flex-row items-center`}
-      onPress={() => handleSelectLocation(item.name || item)}
-    >
-      <MapPin color="#0D6EFD" size={16} />
-      <View style={tw`ml-3 flex-1`}>
-        <Text style={tw`text-xs font-bold text-slate-800`}>{item.name || item}</Text>
-        {item.place_name && <Text style={tw`text-[10px] text-slate-500`} numberOfLines={1}>{item.place_name}</Text>}
-      </View>
-    </TouchableOpacity>
-  );
-
-  const renderBusCard = ({ item }) => (
-    <TouchableOpacity 
-      style={tw`bg-white rounded-3xl p-4 mb-4 border border-slate-100 shadow-sm`} 
-      onPress={() => navigation.navigate('ConfirmBooking', { bus: item, startStop, endStop })}
-    >
-      <View style={tw`flex-row justify-between items-center mb-2`}>
-        <View style={tw`flex-row items-center flex-1`}>
-          <Bus color="#0D6EFD" size={20} />
-          <Text style={tw`text-sm font-bold ml-2 text-slate-800 flex-1`}>{item.name}</Text>
-        </View>
-        <Text style={tw`text-lg font-bold text-[#0D6EFD]`}>₹{item.fare}</Text>
-      </View>
-      
-      <View style={tw`flex-row justify-between mb-4 ml-7`}>
-        <Text style={tw`text-xs text-slate-500`}>{item.type}</Text>
-        <Text style={tw`text-xs text-amber-600 font-bold`}>{item.seatsLeft} seats left</Text>
-      </View>
-
-      <View style={tw`flex-row justify-between items-center bg-slate-50 p-3 rounded-xl`}>
-        <View>
-          <Text style={tw`text-base font-bold text-slate-800`}>{item.departureTime}</Text>
-          <Text style={tw`text-xs text-slate-500 mt-1 max-w-[80px]`} numberOfLines={1}>{startStop.split(',')[0]}</Text>
-        </View>
-        <View style={tw`items-center`}>
-          <Text style={tw`text-[10px] text-slate-500 mb-1`}>{item.duration}</Text>
-          <ArrowRight color="#64748B" size={16} />
-        </View>
-        <View style={tw`items-end`}>
-          <Text style={tw`text-base font-bold text-slate-800`}>{item.arrivalTime}</Text>
-          <Text style={tw`text-xs text-slate-500 mt-1 max-w-[80px]`} numberOfLines={1}>{endStop.split(',')[0]}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-
   return (
-    <View style={tw`flex-1 bg-slate-50 p-5`}>
-      <View style={tw`mt-10 mb-5`}>
-        <Text style={tw`text-3xl font-bold text-slate-800`}>Plan Journey</Text>
+    <SafeAreaView style={tw`flex-1 bg-slate-50 p-5`}>
+      <View style={tw`mt-2 mb-4`}>
+        <Text style={tw`text-3xl font-bold text-slate-800`}>Search & Book</Text>
       </View>
 
-      <View style={tw`bg-white rounded-3xl p-5 shadow-sm mb-5 border border-slate-100 z-10`}>
-        <View style={tw`flex-row items-center`}>
+      {/* Search Input Box */}
+      <View style={tw`bg-white rounded-3xl p-5 shadow-sm border border-slate-200 mb-6 relative`}>
+        {/* From Input */}
+        <View style={tw`flex-row items-center mb-3`}>
           <MapPin color="#0D6EFD" size={20} />
-          <View style={tw`ml-4 flex-1`}>
-            <Text style={tw`text-xs text-slate-500 font-semibold mb-1`}>From</Text>
-            <TextInput
-              style={tw`text-base text-slate-800 py-2`}
-              placeholder="Start location"
-              placeholderTextColor="#94A3B8"
-              value={startStop}
-              onChangeText={(t) => { setStartStop(t); setShowSuggestions('start'); setHasSearched(false); }}
-              onFocus={() => setShowSuggestions('start')}
-            />
-          </View>
+          <TextInput
+            style={tw`flex-1 ml-3 h-12 text-slate-800 font-semibold text-base`}
+            placeholder="From Destination (e.g. Rajahmundry)"
+            value={startStop}
+            onChangeText={(txt) => handleInputChange(txt, 'start')}
+            onFocus={() => setShowSuggestions('start')}
+          />
         </View>
-        
-        {showSuggestions === 'start' && mapboxSuggestions.length > 0 && (
-          <View style={tw`mt-2 ml-9 bg-white rounded-xl border border-slate-200 shadow-md max-h-[180px] z-50`}>
-            <FlatList
-              data={mapboxSuggestions}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={renderSuggestion}
-              keyboardShouldPersistTaps="handled"
-            />
-          </View>
-        )}
 
-        <View style={tw`h-[1px] bg-slate-100 my-4 ml-9`} />
+        <View style={tw`h-[1px] bg-slate-100 my-1`} />
 
-        <View style={tw`flex-row items-center`}>
+        {/* To Input */}
+        <View style={tw`flex-row items-center mt-3 mb-3`}>
           <MapPin color="#64748B" size={20} />
-          <View style={tw`ml-4 flex-1`}>
-            <Text style={tw`text-xs text-slate-500 font-semibold mb-1`}>To</Text>
-            <TextInput
-              style={tw`text-base text-slate-800 py-2`}
-              placeholder="Destination"
-              placeholderTextColor="#94A3B8"
-              value={endStop}
-              onChangeText={(t) => { setEndStop(t); setShowSuggestions('end'); setHasSearched(false); }}
-              onFocus={() => setShowSuggestions('end')}
-            />
-          </View>
+          <TextInput
+            style={tw`flex-1 ml-3 h-12 text-slate-800 font-semibold text-base`}
+            placeholder="To Destination (e.g. Visakhapatnam)"
+            value={endStop}
+            onChangeText={(txt) => handleInputChange(txt, 'end')}
+            onFocus={() => setShowSuggestions('end')}
+          />
         </View>
 
-        {showSuggestions === 'end' && mapboxSuggestions.length > 0 && (
-          <View style={tw`mt-2 ml-9 bg-white rounded-xl border border-slate-200 shadow-md max-h-[180px] z-50`}>
+        {/* Date Selection */}
+        <View style={tw`h-[1px] bg-slate-100 my-1`} />
+        <View style={tw`flex-row items-center justify-between mt-3 mb-4`}>
+          <View style={tw`flex-row items-center`}>
+            <Calendar color="#0D6EFD" size={18} />
+            <Text style={tw`text-sm font-semibold text-slate-700 ml-2.5`}>Date of Journey:</Text>
+          </View>
+          <TouchableOpacity style={tw`bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100`}>
+            <Text style={tw`text-xs font-bold text-[#0D6EFD]`}>{selectedDate}</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Search Button */}
+        <TouchableOpacity
+          style={tw`bg-[#0D6EFD] h-14 rounded-2xl flex-row items-center justify-center shadow-lg shadow-blue-500/20`}
+          onPress={() => handleSearch()}
+        >
+          <Search color="#FFFFFF" size={20} />
+          <Text style={tw`text-white font-bold text-base ml-2`}>Search Buses</Text>
+        </TouchableOpacity>
+
+        {/* Mapbox Auto-suggestions Overlay */}
+        {showSuggestions && mapboxSuggestions.length > 0 && (
+          <View style={tw`absolute top-28 left-4 right-4 bg-white rounded-2xl p-2 shadow-xl border border-slate-200 z-50`}>
             <FlatList
               data={mapboxSuggestions}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={renderSuggestion}
+              keyExtractor={(item, idx) => idx.toString()}
               keyboardShouldPersistTaps="handled"
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={tw`p-3 border-b border-slate-100 flex-row items-center`}
+                  onPress={() => handleSelectSuggestion(item.name, showSuggestions)}
+                >
+                  <MapPin color="#0D6EFD" size={16} />
+                  <Text style={tw`text-sm text-slate-800 font-medium ml-2.5 flex-1`}>{item.name}</Text>
+                </TouchableOpacity>
+              )}
             />
           </View>
         )}
-
-        <View style={tw`h-[1px] bg-slate-100 my-4 ml-9`} />
-
-        <View style={tw`flex-row items-center`}>
-          <Calendar color="#0D6EFD" size={20} />
-          <View style={tw`ml-4 flex-1`}>
-            <Text style={tw`text-xs text-slate-500 font-semibold mb-1`}>Journey Date</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={tw`gap-2 py-1`}>
-              {['Today (31 Jul)', 'Tomorrow (1 Aug)', '2 Aug', '3 Aug', '4 Aug'].map((dateStr, idx) => (
-                <TouchableOpacity 
-                  key={idx}
-                  style={tw`px-3 py-1.5 rounded-lg ${selectedDate === dateStr ? 'bg-[#0D6EFD]' : 'bg-slate-100'}`}
-                  onPress={() => setSelectedDate(dateStr)}
-                >
-                  <Text style={tw`text-xs font-semibold ${selectedDate === dateStr ? 'text-white' : 'text-slate-700'}`}>{dateStr}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
       </View>
 
-      {!hasSearched && (
-        <TouchableOpacity
-          style={tw`bg-[#0D6EFD] flex-row items-center justify-center h-15 rounded-2xl mt-auto mb-24 ${(!startStop || !endStop) ? 'bg-slate-400' : ''}`}
-          onPress={() => handleSearch()}
-          disabled={!startStop || !endStop}
-        >
-          <Search color="#FFFFFF" size={22} style={tw`mr-2`} />
-          <Text style={tw`text-white text-lg font-bold`}>Search Buses</Text>
-        </TouchableOpacity>
-      )}
+      {/* Results Header */}
+      <View style={tw`flex-row justify-between items-center mb-3`}>
+        <Text style={tw`text-lg font-bold text-slate-800`}>Available Buses</Text>
+        {searchResults.length > 0 && (
+          <Text style={tw`text-xs text-slate-500 font-semibold`}>{searchResults.length} Buses Found</Text>
+        )}
+      </View>
 
-      {/* Search Results */}
-      {hasSearched && !showSuggestions && (
-        <View style={tw`flex-1`}>
-          <Text style={tw`text-lg font-bold text-slate-800 mb-3`}>
-            {searchResults.length > 0 
-              ? `${searchResults.length} Buses Found` 
-              : `No Buses Found from ${startStop} to ${endStop}`}
-          </Text>
-          {loading ? (
-            <ActivityIndicator size="large" color="#0D6EFD" style={tw`mt-5`} />
-          ) : (
-            <FlatList
-              data={searchResults}
-              keyExtractor={item => item.id.toString()}
-              renderItem={renderBusCard}
-              contentContainerStyle={tw`pb-5`}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
+      {/* Results List */}
+      {loading ? (
+        <View style={tw`flex-1 justify-center items-center py-10`}>
+          <ActivityIndicator color="#0D6EFD" size="large" />
+          <Text style={tw`text-slate-500 text-xs mt-3 font-semibold`}>Searching RTC network for buses...</Text>
+        </View>
+      ) : searchResults.length > 0 ? (
+        <ScrollView style={tw`flex-1`} showsVerticalScrollIndicator={false}>
+          {searchResults.map((bus) => (
+            <View key={bus.id} style={tw`bg-white rounded-3xl p-5 mb-4 shadow-sm border border-slate-100`}>
+              <View style={tw`flex-row justify-between items-start mb-3`}>
+                <View style={tw`flex-1 mr-2`}>
+                  <Text style={tw`text-base font-bold text-slate-800`}>{bus.name}</Text>
+                  <Text style={tw`text-xs text-[#0D6EFD] font-semibold mt-0.5`}>APSRTC Express Line</Text>
+                </View>
+                <Text style={tw`text-2xl font-extrabold text-[#0D6EFD]`}>₹{Number(bus.fare).toFixed(2)}</Text>
+              </View>
+
+              <View style={tw`flex-row justify-between items-center bg-slate-50 p-3 rounded-2xl mb-4 border border-slate-100`}>
+                <View>
+                  <Text style={tw`text-xs text-slate-400 font-medium`}>Departure</Text>
+                  <Text style={tw`text-sm font-bold text-slate-700`}>{bus.departureTime || '06:00 AM'}</Text>
+                </View>
+                <View style={tw`items-center`}>
+                  <Text style={tw`text-[10px] text-slate-400 font-semibold`}>{bus.duration || '1h 12m'}</Text>
+                  <ArrowRight color="#94A3B8" size={16} />
+                </View>
+                <View style={tw`items-end`}>
+                  <Text style={tw`text-xs text-slate-400 font-medium`}>Arrival</Text>
+                  <Text style={tw`text-sm font-bold text-slate-700`}>{bus.arrivalTime || '07:12 AM'}</Text>
+                </View>
+              </View>
+
+              <TouchableOpacity
+                style={tw`bg-[#0D6EFD] py-3.5 rounded-2xl items-center flex-row justify-center shadow-md shadow-blue-500/20`}
+                onPress={() => navigation.navigate('ConfirmBooking', { bus, startStop: startStop || bus.startStop, endStop: endStop || bus.endStop })}
+              >
+                <Bus color="#FFFFFF" size={18} style={tw`mr-2`} />
+                <Text style={tw`text-white font-bold text-base`}>Book Ticket</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+      ) : hasSearched ? (
+        <View style={tw`flex-1 justify-center items-center p-6`}>
+          <Text style={tw`text-slate-400 text-sm font-semibold`}>No direct buses found for selected stops.</Text>
+        </View>
+      ) : (
+        <View style={tw`flex-1 justify-center items-center p-6`}>
+          <Text style={tw`text-slate-400 text-sm font-semibold`}>Enter departure & destination stops above to view schedules.</Text>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }

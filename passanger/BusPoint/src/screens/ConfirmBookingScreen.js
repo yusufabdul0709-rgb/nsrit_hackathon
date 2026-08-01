@@ -1,5 +1,6 @@
 import React, { useState, useContext, useRef } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Animated, ScrollView, Modal } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
 import { Bus, MapPin, Ticket as TicketIcon, AlertCircle, CreditCard, Wallet, ShieldCheck, CheckCircle2, RefreshCw } from 'lucide-react-native';
@@ -178,7 +179,7 @@ export default function ConfirmBookingScreen({ route, navigation }) {
   };
 
   return (
-    <View style={tw`flex-1 bg-slate-50 p-5`}>
+    <SafeAreaView style={tw`flex-1 bg-slate-50 p-5`}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={tw`pb-10`}>
         <View style={tw`mt-10 mb-5`}>
           <Text style={tw`text-3xl font-bold text-slate-800`}>Confirm Booking</Text>
@@ -362,6 +363,6 @@ export default function ConfirmBookingScreen({ route, navigation }) {
           onError={(err) => { setRazorpayModalVisible(false); setActiveOrder(null); Alert.alert('Payment Failed', err); }}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }

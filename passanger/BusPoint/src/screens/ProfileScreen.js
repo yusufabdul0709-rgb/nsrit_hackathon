@@ -1,5 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthContext } from '../context/AuthContext';
 import { LogOut, User, FileText, Settings, WifiOff, ChevronRight, Star } from 'lucide-react-native';
@@ -23,103 +24,88 @@ export default function ProfileScreen({ navigation }) {
         setOfflineTicket(JSON.parse(stored));
       }
     } catch (e) {
-      console.log('Error reading offline ticket', e);
+      console.log('Error reading stored ticket:', e);
     }
   };
 
   const handleLogout = () => {
     Alert.alert('Logout', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Logout', onPress: () => logout(), style: 'destructive' }
+      { text: 'Logout', style: 'destructive', onPress: logout }
     ]);
   };
 
-  const handleViewOfflineTicket = () => {
-    if (offlineTicket) {
-      navigation.navigate('TicketQR', { ticket: offlineTicket });
-    }
-  };
-
   return (
-    <ScrollView style={tw`flex-1 bg-slate-50`} contentContainerStyle={tw`p-5 pt-15 pb-25`}>
-      <View style={tw`items-center mb-10`}>
-        <View style={tw`w-20 h-20 rounded-full bg-[#0D6EFD] justify-center items-center mb-4 shadow-lg`}>
-          <User color="#FFFFFF" size={40} />
+    <SafeAreaView style={tw`flex-1 bg-slate-50 p-5`}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={tw`mt-2 mb-6 flex-row items-center`}>
+          <View style={tw`w-16 h-16 rounded-full bg-[#0D6EFD] justify-center items-center mr-4 shadow-md`}>
+            <User color="#FFFFFF" size={32} />
+          </View>
+          <View>
+            <Text style={tw`text-2xl font-bold text-slate-800`}>{userData?.name || 'Valued Passenger'}</Text>
+            <Text style={tw`text-sm text-slate-500`}>{userData?.phone || '+91 9876543210'}</Text>
+            <View style={tw`bg-blue-100 px-2 py-0.5 rounded-md self-start mt-1`}>
+              <Text style={tw`text-[#0D6EFD] text-[10px] font-bold`}>APSRTC Regular Passenger</Text>
+            </View>
+          </View>
         </View>
-        <Text style={tw`text-2xl font-bold text-slate-800 mb-1`}>{userData?.name || 'Passenger'}</Text>
-        <Text style={tw`text-base text-slate-500 mb-3`}>+91 {userData?.phone || 'XXXXXXXXXX'}</Text>
-        <View style={tw`bg-blue-50 px-3 py-1 rounded-xl`}>
-          <Text style={tw`text-xs font-bold text-[#0D6EFD]`}>{userData?.role || 'PASSENGER'}</Text>
+
+        {/* Offline Saved Ticket Quick Access */}
+        {offlineTicket && (
+          <View style={tw`bg-emerald-50 rounded-2xl p-4 mb-6 border border-emerald-200 shadow-sm`}>
+            <View style={tw`flex-row justify-between items-center mb-2`}>
+              <View style={tw`flex-row items-center`}>
+                <WifiOff color="#059669" size={18} />
+                <Text style={tw`text-emerald-800 text-sm font-bold ml-2`}>Stored Offline Ticket</Text>
+              </View>
+              <Text style={tw`text-xs text-emerald-600 font-mono`}>{offlineTicket.ticketId}</Text>
+            </View>
+            <Text style={tw`text-slate-700 text-xs mb-3`}>{offlineTicket.startStop} → {offlineTicket.endStop}</Text>
+
+            <TouchableOpacity 
+              style={tw`bg-emerald-600 py-2.5 rounded-xl items-center`}
+              onPress={() => navigation.navigate('TicketQR', { ticket: offlineTicket })}
+            >
+              <Text style={tw`text-white text-xs font-bold`}>View Stored QR & Ticket</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={tw`bg-white rounded-3xl p-4 shadow-sm border border-slate-100 mb-6`}>
+          <TouchableOpacity style={tw`flex-row items-center justify-between py-3 border-b border-slate-100`} onPress={() => navigation.navigate('Journey')}>
+            <View style={tw`flex-row items-center`}>
+              <FileText color="#0D6EFD" size={20} />
+              <Text style={tw`text-base font-semibold text-slate-700 ml-3`}>My Booked Tickets</Text>
+            </View>
+            <ChevronRight color="#94A3B8" size={20} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={tw`flex-row items-center justify-between py-3 border-b border-slate-100`} onPress={() => navigation.navigate('Wallet')}>
+            <View style={tw`flex-row items-center`}>
+              <Settings color="#0D6EFD" size={20} />
+              <Text style={tw`text-base font-semibold text-slate-700 ml-3`}>Wallet & Payments</Text>
+            </View>
+            <ChevronRight color="#94A3B8" size={20} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={tw`flex-row items-center justify-between py-3`} onPress={() => navigation.navigate('Feedback')}>
+            <View style={tw`flex-row items-center`}>
+              <Star color="#0D6EFD" size={20} />
+              <Text style={tw`text-base font-semibold text-slate-700 ml-3`}>Help & Support</Text>
+            </View>
+            <ChevronRight color="#94A3B8" size={20} />
+          </TouchableOpacity>
         </View>
-      </View>
-
-      <View style={tw`mb-8`}>
-        <Text style={tw`text-lg font-bold text-slate-800 mb-4`}>Offline Access</Text>
-        
-        <TouchableOpacity 
-          style={tw`flex-row items-center bg-white p-4 rounded-2xl mb-3 border border-slate-200`} 
-          onPress={handleViewOfflineTicket} 
-          disabled={!offlineTicket}
-        >
-          <View style={tw`w-12 h-12 rounded-xl bg-emerald-50 justify-center items-center mr-4`}>
-            <WifiOff color="#34A853" size={24} />
-          </View>
-          <View style={tw`flex-1`}>
-            <Text style={tw`text-base font-semibold text-slate-800 mb-0.5`}>My Offline Ticket</Text>
-            {offlineTicket ? (
-              <Text style={tw`text-xs text-slate-500`}>Saved for no-internet access</Text>
-            ) : (
-              <Text style={tw`text-xs text-slate-500`}>No tickets cached</Text>
-            )}
-          </View>
-          <ChevronRight color="#94A3B8" size={20} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={tw`mb-8`}>
-        <Text style={tw`text-lg font-bold text-slate-800 mb-4`}>Account</Text>
-        
-        <TouchableOpacity style={tw`flex-row items-center bg-white p-4 rounded-2xl mb-3 border border-slate-200`}>
-          <View style={tw`w-12 h-12 rounded-xl bg-blue-50 justify-center items-center mr-4`}>
-            <FileText color="#0D6EFD" size={24} />
-          </View>
-          <View style={tw`flex-1`}>
-            <Text style={tw`text-base font-semibold text-slate-800 mb-0.5`}>My Documents</Text>
-            <Text style={tw`text-xs text-slate-500`}>ID cards & passes</Text>
-          </View>
-          <ChevronRight color="#94A3B8" size={20} />
-        </TouchableOpacity>
 
         <TouchableOpacity 
-          style={tw`flex-row items-center bg-white p-4 rounded-2xl mb-3 border border-slate-200`} 
-          onPress={() => navigation.navigate('Feedback')}
+          style={tw`bg-rose-50 flex-row items-center justify-center py-4 rounded-2xl border border-rose-100 mb-10`}
+          onPress={handleLogout}
         >
-          <View style={tw`w-12 h-12 rounded-xl bg-amber-50 justify-center items-center mr-4`}>
-            <Star color="#FFC107" size={24} />
-          </View>
-          <View style={tw`flex-1`}>
-            <Text style={tw`text-base font-semibold text-slate-800 mb-0.5`}>Rate Your Journey</Text>
-            <Text style={tw`text-xs text-slate-500`}>Provide cleanliness & driver feedback</Text>
-          </View>
-          <ChevronRight color="#94A3B8" size={20} />
+          <LogOut color="#EF4444" size={20} />
+          <Text style={tw`text-rose-500 font-bold text-base ml-2`}>Log Out</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity style={tw`flex-row items-center bg-white p-4 rounded-2xl mb-3 border border-slate-200`}>
-          <View style={tw`w-12 h-12 rounded-xl bg-blue-50 justify-center items-center mr-4`}>
-            <Settings color="#0D6EFD" size={24} />
-          </View>
-          <View style={tw`flex-1`}>
-            <Text style={tw`text-base font-semibold text-slate-800 mb-0.5`}>Settings</Text>
-            <Text style={tw`text-xs text-slate-500`}>Preferences & Security</Text>
-          </View>
-          <ChevronRight color="#94A3B8" size={20} />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={tw`flex-row items-center justify-center bg-red-50 py-4 rounded-2xl mt-5`} onPress={handleLogout}>
-        <LogOut color="#E74C3C" size={20} style={tw`mr-2`} />
-        <Text style={tw`text-red-600 text-base font-bold`}>Log Out</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }

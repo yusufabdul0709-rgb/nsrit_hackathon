@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { View, Text, TouchableOpacity, TextInput, ActivityIndicator, Alert, Modal, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuthContext } from '../context/AuthContext';
 import { Wallet, Plus, RefreshCw, CreditCard, ShieldCheck } from 'lucide-react-native';
 import { API_BASE_URL } from '../config/api';
@@ -58,7 +59,6 @@ export default function WalletScreen() {
 
     setLoading(true);
     try {
-      // 1. Create Razorpay order from backend
       const res = await fetch(`${API_BASE_URL}/api/payment/createRazorpayOrder`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -78,7 +78,6 @@ export default function WalletScreen() {
         Alert.alert('Razorpay Error', orderData.message || 'Could not initiate Razorpay order.');
       }
     } catch (error) {
-      // Fallback open Razorpay Checkout UI directly
       setActiveOrder({
         orderId: `order_test_${Date.now()}`,
         amount: amount,
@@ -98,7 +97,6 @@ export default function WalletScreen() {
     const topUpAmount = activeOrder ? activeOrder.amount : parseFloat(amountToAdd);
 
     try {
-      // Verify payment with backend & credit balance in MongoDB
       const verifyRes = await fetch(`${API_BASE_URL}/api/payment/verifyTopUp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,8 +141,8 @@ export default function WalletScreen() {
   };
 
   return (
-    <View style={tw`flex-1 bg-slate-50 p-5`}>
-      <View style={tw`flex-row justify-between items-center mt-10 mb-5`}>
+    <SafeAreaView style={tw`flex-1 bg-slate-50 p-5`}>
+      <View style={tw`flex-row justify-between items-center mt-2 mb-5`}>
         <View>
           <Text style={tw`text-3xl font-bold text-slate-800`}>My Wallet</Text>
           <Text style={tw`text-xs text-slate-500 font-semibold`}>{userName}</Text>
@@ -289,6 +287,6 @@ export default function WalletScreen() {
           onError={handleRazorpayError}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
