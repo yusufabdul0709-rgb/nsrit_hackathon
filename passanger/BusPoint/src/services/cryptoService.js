@@ -1,5 +1,5 @@
-let nacl: any = null;
-let naclUtil: any = null;
+let nacl = null;
+let naclUtil = null;
 
 try {
   nacl = require('tweetnacl');
@@ -8,8 +8,8 @@ try {
   console.log('tweetnacl fallback active');
 }
 
-let conductorKeyPair: any = null;
-let passengerKeyPair: any = null;
+let conductorKeyPair = null;
+let passengerKeyPair = null;
 
 if (nacl && naclUtil) {
   try {
@@ -22,7 +22,7 @@ if (nacl && naclUtil) {
   } catch (e) {}
 }
 
-export const verifyPaymentRequest = (payloadString: string) => {
+export const verifyPaymentRequest = (payloadString) => {
   try {
     const payload = JSON.parse(payloadString);
     if (!payload.signature) {
@@ -49,13 +49,13 @@ export const verifyPaymentRequest = (payloadString: string) => {
 
     const { signature, ...originalPayload } = payload;
     return { success: true, request: originalPayload };
-  } catch (error: any) {
+  } catch (error) {
     return { success: false, error: error.message || 'Invalid QR Format' };
   }
 };
 
-export const generatePassengerToken = (request: any) => {
-  const token: any = {
+export const generatePassengerToken = (request) => {
+  const token = {
     version: 1,
     transactionId: 'TXN-' + Math.floor(100000 + Math.random() * 900000),
     requestId: request?.requestId || `REQ-${Date.now()}`,
