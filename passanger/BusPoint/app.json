@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BusPoint",
-    "slug": "BusPoint",
+    "slug": "BusPointPassenger",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -33,6 +33,11 @@
           "cameraPermission": "Allow BusPoint to access camera to scan ticket QR codes."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "629dd1de-555a-423b-8995-7bfaf402d361"
+      }
+    }
   }
 }
