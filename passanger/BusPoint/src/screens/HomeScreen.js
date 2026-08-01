@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { Text, View, ScrollView, TouchableOpacity, Image, StatusBar, Platform, TextInput, Animated } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import LiveTrackingCard from '../components/LiveTrackingCard';
 import {
   Bell, MapPin, Wallet, Search,
@@ -324,29 +325,23 @@ const RecentJourneys = ({ navigation }) => (
 export default function HomeScreen({ navigation }) {
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const fabTranslateY = scrollY.interpolate({
-    inputRange: [0, 50, 100],
-    outputRange: [0, 0, 100],
-    extrapolate: 'clamp',
-  });
-
   return (
-    <View style={tw`flex-1 bg-slate-50`}>
+    <SafeAreaView edges={['top']} style={tw`flex-1 bg-[#0D6EFD]`}>
       <StatusBar barStyle="light-content" backgroundColor="#0D6EFD" />
       <Animated.ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={tw`pb-25`}
+        contentContainerStyle={tw`pb-25 bg-slate-50`}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: true }
         )}
         scrollEventThrottle={16}
       >
-        <View style={tw`bg-[#0D6EFD] px-5 ${Platform.OS === 'android' ? 'pt-12' : 'pt-5'} pb-10 rounded-b-[32px]`}>
+        <View style={tw`bg-[#0D6EFD] px-5 ${Platform.OS === 'android' ? 'pt-2' : 'pt-2'} pb-10 rounded-b-[32px]`}>
           <Header />
           <HeroCard navigation={navigation} />
         </View>
-        <View style={tw`px-5 -mt-8`}>
+        <View style={tw`px-5 -mt-8 bg-slate-50`}>
           <SmartSearch navigation={navigation} />
           <QuickActions navigation={navigation} />
           <View style={tw`flex-row justify-between items-center mb-4`}>
@@ -361,16 +356,6 @@ export default function HomeScreen({ navigation }) {
           <RecentJourneys navigation={navigation} />
         </View>
       </Animated.ScrollView>
-
-      {/* AI Assistant FAB */}
-      <Animated.View style={[tw`absolute bottom-6 right-6 z-50`, { transform: [{ translateY: fabTranslateY }] }]}>
-        <TouchableOpacity 
-          style={tw`w-15 h-15 rounded-full bg-purple-600 justify-center items-center shadow-lg`} 
-          onPress={() => navigation.navigate('AIAssistant')}
-        >
-          <Bot color="#FFFFFF" size={28} />
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
+    </SafeAreaView>
   );
 }

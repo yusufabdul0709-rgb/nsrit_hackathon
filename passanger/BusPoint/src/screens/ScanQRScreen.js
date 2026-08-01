@@ -33,9 +33,9 @@ import {
   Ticket as TicketIcon
 } from 'lucide-react-native';
 import tw from 'twrnc';
-import { AuthContext } from './src/context/AuthContext';
-import { API_BASE_URL } from './src/config/api';
-import RazorpayCheckoutModal from './src/components/RazorpayCheckoutModal';
+import { AuthContext } from '../context/AuthContext';
+import { API_BASE_URL } from '../config/api';
+import RazorpayCheckoutModal from '../components/RazorpayCheckoutModal';
 
 const { width } = Dimensions.get('window');
 
